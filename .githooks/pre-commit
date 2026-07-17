@@ -1,0 +1,25 @@
+#!/bin/sh
+# Pre-commit hook: block commits containing secrets.
+# Requires gitleaks: https://github.com/gitleaks/gitleaks
+#
+# One-time setup after cloning:
+#   git config core.hooksPath .githooks
+#   chmod +x .githooks/pre-commit
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "WARNING: gitleaks not installed — skipping secret scan."
+  echo "Install it (see https://github.com/gitleaks/gitleaks#installing) to enable this check."
+  exit 0
+fi
+
+echo "Running gitleaks secret scan..."
+gitleaks protect --staged --verbose
+
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "COMMIT BLOCKED: gitleaks detected a potential secret in staged changes."
+  echo "Remove it, or if it's a false positive, see gitleaks docs on allowlisting."
+  exit 1
+fi
+
+exit 0

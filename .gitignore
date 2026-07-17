@@ -1,0 +1,60 @@
+# Secrets — never commit
+*.env
+.env
+secrets/
+secrets.env
+*.ovpn
+*_api_key*
+*apikey*
+*.pem
+*.key
+
+# Recon output / lab-specific (private repo territory)
+Recon Output/*
+!Recon Output/.gitkeep
+
+# Lab environment specifics (scope docs, VM inventory - often client-sensitive)
+Lab Environment/*
+!Lab Environment/.gitkeep
+
+# CVE watch notes may reference active client context
+CVE Watch/*
+!CVE Watch/.gitkeep
+
+# HTB Writeups: only RETIRED boxes may be public (see CLAUDE.md's
+# Publishing rule). Nothing is un-ignored by default -- once a specific box
+# is confirmed retired, add an explicit line below: "!HTB Writeups/<target>.md"
+HTB Writeups/*
+!HTB Writeups/.gitkeep
+
+# Leftover disconnected Obsidian vault stub, not part of the real project
+Security Guru/
+
+# Orchestration/goal-tracking state — names active/in-progress targets before
+# they're cleared for publishing; keep this private regardless of what's in
+# HTB Writeups/. Structure preserved via .gitkeep; content excluded.
+Orchestration/*
+!Orchestration/.gitkeep
+!Orchestration/queues/
+Orchestration/queues/*
+!Orchestration/queues/.gitkeep
+
+# Python virtualenv — regenerate from Tooling and Scripts/htb_connect.py's
+# docstring instead of committing it
+Tooling and Scripts/.venv/
+**/.venv/
+
+# Local/machine-specific Claude Code settings, not portfolio-relevant
+.claude/settings.local.json
+
+# Python build artifacts
+**/__pycache__/
+*.pyc
+
+# The git-setup scaffold zip itself — not part of the project
+*.zip
+
+# OS/editor cruft
+.DS_Store
+**/.obsidian/workspace*
+**/.obsidian/cache
