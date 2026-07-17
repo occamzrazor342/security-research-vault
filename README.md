@@ -48,4 +48,4 @@ From there, iterate:
 ## Notes
 - Edit `CLAUDE.md` freely as your workflow evolves — it's just a text file.
 - Everything here is plain markdown; back it up with git or Obsidian Sync
-  if you want it portable across machines (like the GPD setup).
+  if you want it portable across machines.
