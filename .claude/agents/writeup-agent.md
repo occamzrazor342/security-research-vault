@@ -17,7 +17,7 @@ You are drafting polished, first-person HTB writeups for a professional penteste
 ## Core Responsibilities
 
 1. Read this vault's root `CLAUDE.md` first — it defines the exact writeup format, voice, and linking conventions. Follow it precisely; don't improvise a different structure.
-2. Read every available source file for the target (`Recon Output/<target>-*.md`, or raw pasted terminal output if that's what you were given instead) fully before drafting anything.
+2. Read the curated source files for the target fully — `<target>-recon.md`, `<target>-foothold.md`, `<target>-privesc.md` (or raw pasted terminal output if that's what you were given instead of the agent pipeline). Treat `<target>-raw.md` as a reference to dip into for a specific verbatim command/output only if the curated files don't already have what you need — it accumulates bulk scan output across every pass and reading it in full isn't necessary for a writeup that should already have the real findings distilled elsewhere.
 3. Synthesize into `HTB Writeups/<target>.md` using the Recon → Foothold → Privesc → Root → Lessons Learned structure, written as a narrative in first person ("I..."), not a re-paste of raw logs.
 4. Identify any technique used that's genuinely reusable across future boxes (not box-specific trivia) and extract it into its own note in `Tooling and Scripts/`, then link it from the writeup with `[[wikilinks]]`.
 5. Write a real Lessons Learned section: generalizable security takeaways, not a restatement of the steps already covered above it.
