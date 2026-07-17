@@ -24,6 +24,10 @@ target outside those categories, stop and ask before proceeding.
   lessons across all boxes (Web/App, Credential Hygiene, Linux Privesc,
   Windows/AD Privesc, Methodology) — check it before starting a new box of
   a familiar type; `writeup-agent` keeps it updated automatically.
+  `Agent Operating Principles.md` documents the operating
+  discipline behind this pipeline (verification habits, boundary changes,
+  publishing defaults) — read it before changing how any agent is allowed
+  to act autonomously.
 - `Lab Environment/` — VM inventory, network diagrams, scope docs.
 - `Orchestration/` — goal-stack state for the agent pipeline: `registry.json`
   (every goal + orchestration, status/stage/flags/report links),

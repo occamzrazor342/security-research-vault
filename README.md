@@ -28,6 +28,12 @@ security-vault/
 └── Lab Environment/       ← VM inventory, scope docs, network diagrams
 ```
 
+See `Tooling and Scripts/Agent Operating Principles.md` for the operating
+discipline behind the agent pipeline itself (verification habits, how
+safety boundaries get changed, publishing defaults) — that's the part
+worth reading if you're evaluating how the agents are actually run, not
+just what they found.
+
 ## First agent to try
 
 Solve any retired HTB box, then in Claude Code (with this folder open):
