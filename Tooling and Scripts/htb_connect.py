@@ -12,10 +12,10 @@ token on the command line or hardcode it here.
 Every subcommand prints a single JSON object to stdout on success, or to
 stderr with a non-zero exit code on failure.
 
-Note: this only talks to the HTB API (spawn/stop/reset/status/vpn/submit).
-It does not start the OpenVPN tunnel itself -- that needs `sudo`, which
-can't run non-interactively here. `vpn-download` prints the exact
-`sudo openvpn --config ...` command to run by hand.
+Note: this only talks to the HTB API (spawn/stop/reset/status/vpn/submit/
+challenge-*). It does not start the OpenVPN tunnel itself -- that needs
+`sudo`, which can't run non-interactively here. `vpn-download` prints the
+exact `sudo openvpn --config ...` command to run by hand.
 
 KNOWN GAP -- non-"labs" VPN products: pyhackthebox's get_active_machine()
 calls get_current_vpn_server() internally to build the MachineInstance,
@@ -58,7 +58,10 @@ from hackthebox import (
     CannotSwitchWithActive,
     HtbException,
     IncorrectFlagException,
+    NoDockerException,
+    NoDownloadException,
     NotFoundException,
+    RateLimitException,
     RootAlreadySubmitted,
     UserAlreadySubmitted,
 )
@@ -66,6 +69,7 @@ from hackthebox import HTBClient
 
 VAULT_ROOT = Path(__file__).resolve().parent.parent
 CONNECTION_FILE = VAULT_ROOT / "Lab Environment" / "htb-active-connection.json"
+CHALLENGE_FILE = VAULT_ROOT / "Lab Environment" / "htb-active-challenge.json"
 
 
 def fail(message, **extra):
@@ -110,6 +114,11 @@ def tun_interfaces():
 def write_connection_snapshot(data):
     CONNECTION_FILE.parent.mkdir(parents=True, exist_ok=True)
     CONNECTION_FILE.write_text(json.dumps(data, indent=2, default=str))
+
+
+def write_challenge_snapshot(data):
+    CHALLENGE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CHALLENGE_FILE.write_text(json.dumps(data, indent=2, default=str))
 
 
 def get_active_machine_or_none(client, release_arena):
@@ -326,6 +335,159 @@ def cmd_submit(args):
     emit({"result": message})
 
 
+def cmd_challenge_list(args):
+    client = get_client()
+    # Deliberately summary-only fields: get_challenges() returns Challenge
+    # objects with summary=True, and touching a detailed attribute (category,
+    # has_docker, description, ...) lazy-triggers one get_challenge() call
+    # per object -- fine for challenge-info's single lookup, but would turn
+    # a list of N into N+1 API calls here.
+    challenges = client.get_challenges(limit=args.limit, retired=args.retired)
+    emit(
+        [
+            {
+                "id": c.id,
+                "name": c.name,
+                "difficulty": c.difficulty,
+                "points": c.points,
+                "solves": c.solves,
+                "solved": c.solved,
+                "retired": c.retired,
+            }
+            for c in challenges
+        ]
+    )
+
+
+def cmd_challenge_info(args):
+    client = get_client()
+    try:
+        challenge = client.get_challenge(args.target)
+    except NotFoundException:
+        fail(f"No challenge found matching '{args.target}'")
+    try:
+        # KNOWN GAP (2026-07-20): pyhackthebox's User.__init__ unconditionally
+        # reads data["description"], which the response shape backing
+        # Challenge.authors (a plain user/profile/basic lookup) doesn't
+        # include -- crashes with KeyError('description') on every challenge
+        # tried so far. A pyhackthebox bug, not an App-Token scope issue
+        # (unlike the submit gaps elsewhere in this file). Degrade to null
+        # rather than losing the whole command over one field.
+        authors = [a.name for a in challenge.authors]
+    except HtbException:
+        authors = None
+    except KeyError:
+        authors = None
+    emit(
+        {
+            "id": challenge.id,
+            "name": challenge.name,
+            "category": challenge.category,
+            "difficulty": challenge.difficulty,
+            "points": challenge.points,
+            "solves": challenge.solves,
+            "solved": challenge.solved,
+            "retired": challenge.retired,
+            "has_docker": challenge.has_docker,
+            "has_download": challenge.has_download,
+            "description": challenge.description,
+            "authors": authors,
+        }
+    )
+
+
+def cmd_challenge_start(args):
+    # KNOWN GAP (2026-07-20): pyhackthebox's Challenge.start() posts to
+    # "challenge/start", which 404s ("route ... could not be found") against
+    # the real v4 API -- confirmed live against "You know 0xDiablos" (a Pwn
+    # challenge with has_docker=True), same failure whether called through
+    # the library or with a raw do_request. Quick variant probes
+    # (challenge/docker/start, challenge/start/<id>, docker/start,
+    # challenge/<id>/start) all 404 too -- the real route wasn't found in a
+    # reasonable amount of guessing. Unlike the machine-submit gap, this
+    # doesn't look like an App-Token scope restriction (challenge-submit
+    # below hits a sibling "challenge/own" route and works fine) -- more
+    # likely just a stale/renamed endpoint in the library, same class of
+    # issue as machine/submit and machine/list elsewhere in this file. Left
+    # wired up as-is (not removed) in case HTB restores/renames the route;
+    # don't trust this subcommand until it's re-verified live.
+    client = get_client()
+    try:
+        challenge = client.get_challenge(args.target)
+    except NotFoundException:
+        fail(f"No challenge found matching '{args.target}'")
+    try:
+        instance = challenge.start()
+    except NoDockerException:
+        fail(f"'{challenge.name}' has no Docker instance -- it's download-only, use challenge-download.")
+    except HtbException as e:
+        fail(f"Start failed: {e}")
+
+    result = {"name": challenge.name, "id": challenge.id, "ip": instance.ip, "port": instance.port}
+    write_challenge_snapshot({"target": challenge.name, **result})
+    emit(result)
+
+
+def cmd_challenge_stop(args):
+    # KNOWN GAP (2026-07-20): same as challenge-start above -- "challenge/stop"
+    # 404s live. Left wired up for the same reason; don't trust until
+    # re-verified.
+    client = get_client()
+    try:
+        challenge = client.get_challenge(args.target)
+    except NotFoundException:
+        fail(f"No challenge found matching '{args.target}'")
+    try:
+        client.do_request("challenge/stop", json_data={"challenge_id": challenge.id})
+    except HtbException as e:
+        fail(f"Stop failed: {e}")
+    emit({"stopped": challenge.name})
+
+
+def cmd_challenge_download(args):
+    client = get_client()
+    try:
+        challenge = client.get_challenge(args.target)
+    except NotFoundException:
+        fail(f"No challenge found matching '{args.target}'")
+    dest_dir = VAULT_ROOT / "CTF Notes" / "challenge-downloads"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / f"{challenge.name.replace(' ', '_')}.zip"
+    try:
+        # Note: RateLimitException's own __init__ prints its message to
+        # stdout before we ever see it -- a library quirk that breaks the
+        # "single JSON object on stdout" contract this script otherwise
+        # holds. Harmless (the JSON error below still lands on stderr) but
+        # don't be surprised by the extra stdout line if this fires.
+        path = challenge.download(path=str(dest))
+    except NoDownloadException:
+        fail(f"'{challenge.name}' has no downloadable file -- it's Docker-only, use challenge-start.")
+    except RateLimitException as e:
+        fail(f"Download rate-limited: {e}")
+    emit({"downloaded": path, "name": challenge.name})
+
+
+def cmd_challenge_submit(args):
+    # VERIFIED (2026-07-20): posts to "challenge/own" -- confirmed live and
+    # reachable via App Token, returning the expected {"message": "Incorrect
+    # flag"} for a deliberately wrong flag rather than 404ing. So the
+    # App-Token restriction on cmd_submit's "machine/own" gap above does NOT
+    # apply here -- that gap is specific to machine flags (or to that
+    # specific stale route), not a blanket submission restriction.
+    client = get_client()
+    try:
+        challenge = client.get_challenge(args.target)
+    except NotFoundException:
+        fail(f"No challenge found matching '{args.target}'")
+    try:
+        challenge.submit(args.flag, args.difficulty)
+    except IncorrectFlagException:
+        fail("Incorrect flag.")
+    except HtbException as e:
+        fail(f"Submit failed: {e}")
+    emit({"result": "correct", "name": challenge.name, "points": challenge.points})
+
+
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -377,6 +539,33 @@ def build_parser():
     p.add_argument("flag")
     p.add_argument("difficulty", type=int, help="10-100, multiple of 10")
     p.set_defaults(func=cmd_submit)
+
+    p = sub.add_parser("challenge-list", help="List challenges")
+    p.add_argument("--retired", action="store_true", help="List retired challenges instead of active")
+    p.add_argument("--limit", type=int, default=20, help="Max challenges to list (default 20)")
+    p.set_defaults(func=cmd_challenge_list)
+
+    p = sub.add_parser("challenge-info", help="Show full details for one challenge")
+    p.add_argument("target", help="Challenge id or name")
+    p.set_defaults(func=cmd_challenge_info)
+
+    p = sub.add_parser("challenge-start", help="Start a challenge's Docker instance")
+    p.add_argument("target", help="Challenge id or name")
+    p.set_defaults(func=cmd_challenge_start)
+
+    p = sub.add_parser("challenge-stop", help="Stop a challenge's Docker instance")
+    p.add_argument("target", help="Challenge id or name")
+    p.set_defaults(func=cmd_challenge_stop)
+
+    p = sub.add_parser("challenge-download", help="Download a challenge's file bundle")
+    p.add_argument("target", help="Challenge id or name")
+    p.set_defaults(func=cmd_challenge_download)
+
+    p = sub.add_parser("challenge-submit", help="Submit a flag for a challenge")
+    p.add_argument("target", help="Challenge id or name")
+    p.add_argument("flag")
+    p.add_argument("difficulty", type=int, help="10-100, multiple of 10")
+    p.set_defaults(func=cmd_challenge_submit)
 
     return parser
 
