@@ -26,6 +26,7 @@ CVE Watch/*
 # is confirmed retired, add an explicit line below: "!HTB Writeups/<target>.md"
 HTB Writeups/*
 !HTB Writeups/.gitkeep
+!HTB Writeups/fries.md
 
 # Leftover disconnected Obsidian vault stub, not part of the real project
 Security Guru/

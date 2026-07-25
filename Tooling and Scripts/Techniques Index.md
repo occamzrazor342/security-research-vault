@@ -145,6 +145,17 @@ if none does.
   role-scoping story for anyone who can reach it. Generalized in
   [[localstack-unauthenticated-backend-bypass]].
   — [[nimbus#Lessons Learned|nimbus]]
+- A file deleted from a git working tree in a later commit is not scrubbed
+  from history — `git log -p --all` (or a full commit-history grep) over
+  any reachable repo, not just its current `HEAD`, is a standard, high-yield
+  recon step. — [[fries#Lessons Learned|fries]]
+- A boolean-flag POST parameter unsafely passed through Python `eval()`
+  (rather than a real string/bool comparison) is a full authenticated RCE
+  primitive by construction — CVE-2025-2945 (pgAdmin4) is one instance of
+  this pattern; the diagnostic signal that `eval()` fired is a downstream
+  Python error on a non-blocking proof payload, not a syntax error.
+  Generalized in [[pgadmin4-cve-2025-2945-eval-rce]].
+  — [[fries#Lessons Learned|fries]]
 
 ## Credential & Secret Hygiene
 
@@ -196,6 +207,22 @@ if none does.
   being dismissed as "just an old backup." Generalized in
   [[vm-backup-memory-forensics-credential-recovery]].
   — [[checkpoint#Root|Checkpoint]]
+- A credential can be internally-encrypted (undecryptable offline) yet
+  still fully recoverable by redirecting the service's own downstream
+  connection to an attacker-controlled listener and triggering a real auth
+  attempt — the app hands you its own plaintext, no decryption needed.
+  Requires only write access to a self-reloading config plus a minimal
+  protocol-aware capture listener. Generalized in
+  [[config-reload-credential-capture-via-redirect]].
+  — [[fries#Lessons Learned|fries]]
+- Credential reuse on a box can be genuinely *layered* rather than uniform
+  — one password can work across several app-local logins while never
+  matching the AD/OS account it superficially resembles, while a
+  completely different secret (a container image's own seed-admin env var)
+  turns out to double as a real OS account password. Test every recovered
+  secret against every login surface, but confirm each pairing
+  independently rather than assuming a match on one tier implies a match
+  on another. — [[fries#Lessons Learned|fries]]
 
 ## Linux Privesc
 
@@ -327,6 +354,23 @@ if none does.
   actual path in a service surface (CodeBuild) none of the prior nine had
   reason to suspect yet.
   — [[nimbus#Lessons Learned|nimbus]]
+- An NFSv3 `AUTH_SYS` (`AUTH_UNIX`) request's asserted identity is only as
+  trustworthy as the client — `root_squash` only maps the *primary*
+  uid/gid for a uid-0 request; supplementary group IDs and any non-zero
+  uid/gid can still be trusted outright. A pure-Python NFSv3 client's
+  `readdirplus()` can also return entries as a linked list nested under a
+  `nextentry` key rather than a flat array, silently hiding real
+  subdirectories from a naive `for` loop — dump the raw response before
+  trusting a "this export is empty" conclusion. Generalized in
+  [[nfsv3-auth-sys-trust-and-readdirplus-pitfalls]].
+  — [[fries#Lessons Learned|fries]]
+- A TLS-client-cert-authenticated Docker Engine API layered with a
+  CN-mapped authorization plugin (`authz-broker` or similar) provides no
+  real security boundary once the signing CA's private key is recoverable
+  — forge a fresh client cert with a CN chosen to match the plugin's
+  unrestricted policy row rather than reusing any already-issued cert.
+  Generalized in [[docker-tls-client-cert-authz-broker-cn-bypass]].
+  — [[fries#Lessons Learned|fries]]
 
 ## Windows / AD Privesc
 
@@ -421,6 +465,32 @@ if none does.
   group membership before betting a relay/pass-the-ticket design on
   admin rights that don't actually exist.
   — [[garfield#Privesc|garfield]]
+- `ManageCA` genuinely authorizing a CA config write at the server/RPC level
+  and `certutil.exe`/`Set-ItemProperty` refusing to perform that write are
+  two different facts — both tools layer their own client-side elevation
+  check or OS-level registry ACL requirement on top, neither of which is
+  what the CA itself authorizes. Calling the underlying RPC method
+  (`ICertAdmin2::SetConfigEntry`) directly via the
+  `CertificateAuthority.Admin` COM object bypasses both client-side gates.
+  A request denied with disposition 31 ("Denied by Policy Module") is
+  separately, permanently non-resubmittable regardless of `ManageCertificates`
+  rights — distinguish that from a real access-control denial before
+  concluding ESC7 itself is unweaponizable. Generalized in
+  [[adcs-manageca-com-object-configentry-bypass]].
+  — [[fries#Root|fries]]
+- A general Service Control Manager lockdown (`Get-Service`/`net start`/
+  `net stop`/`schtasks.exe` all denied) doesn't necessarily block
+  `sc.exe <verb> <service-name>` targeted at one specific service — a
+  BUILTIN group membership can grant rights on a single named service
+  (e.g. `Certificate Service DCOM Access` on `CertSvc`) separate from
+  general `SC_MANAGER_ENUMERATE_SERVICE` access. Worth trying before
+  concluding a service can't be restarted from a locked-down account.
+  — [[fries#Root|fries]]
+- `ReadGMSAPassword` on a gMSA is a direct NTLM-hash-and-pass-the-hash
+  primitive, not just an LDAP read — netexec's `--gmsa` module (or
+  `gMSADumper`) both confirms the edge by name (who's actually listed in
+  `PrincipalsAllowedToRetrieveManagedPassword`) and decrypts
+  `msDS-ManagedPassword` in one step. — [[fries#Privesc|fries]]
 
 ## Methodology
 
@@ -580,3 +650,25 @@ if none does.
   that as license to re-examine *what specifically* was tested, not just
   to retry the same test again.
   — [[checkpoint#Lessons Learned|Checkpoint]]
+- A single "access denied" is not a diagnosis — the same-looking failure
+  can be a hard server-side policy denial, a client-side tool's own
+  elevation gate, or a protocol-level restriction, and each needs a
+  genuinely different bypass. Distinguishing which one you're actually
+  looking at (not just confirming "still denied" three different ways) is
+  what makes an eventual bypass findable. — [[fries#Lessons Learned|fries]]
+- A subagent's own narrative account of a mid-session event (a claimed
+  message received, an action "declined") is a claim like any other and
+  needs the same verification as a technical finding — cross-check it
+  against the actual session transcript/tool output before treating it as
+  fact, especially anything security-shaped. One session on [[fries]]
+  reported a detailed, box-specific hint had arrived and been declined;
+  no such message existed anywhere in that session's real transcript, and
+  the framing was struck once checked rather than left standing.
+  — [[fries#Lessons Learned|fries]]
+- When a technique's specific working form is confirmed against external
+  material partway through an engagement (rather than independently
+  rediscovered), say so plainly rather than presenting the whole chain as
+  self-derived — especially when the diagnostic work that got you *to* the
+  point of needing that confirmation was genuinely independent. The two
+  are separable facts worth keeping visible, not blurred together after
+  the fact. — [[fries#Root|fries]]
