@@ -71,7 +71,11 @@ skill owns its own `ScheduleWakeup` calls). Each pass:
    - `blocked` → mark the queue line blocked (`- [!]`), increment
      `consecutiveBlockers`. If it reaches `maxConsecutiveBlockers`, set
      `paused: true` and record the reason (e.g. "auto-paused after 2
-     consecutive blocked goals — review before resuming").
+     consecutive blocked goals — review before resuming"). Note:
+     `pwn-box` already runs a bounded recon-escalation retry loop before
+     reporting a goal blocked (see its "Handling a Blocked Stage"
+     section) — a `blocked` status here means that budget was exhausted
+     this run, not that the goal wasn't retried at all.
 7. Go back to step 1 immediately, in the same turn — this is what makes
    it roll rather than run one goal and stop. `ScheduleWakeup` only
    appears in the idle branches (steps 3 and 4), never here.

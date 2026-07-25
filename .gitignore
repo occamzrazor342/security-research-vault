@@ -39,6 +39,36 @@ Orchestration/*
 Orchestration/queues/*
 !Orchestration/queues/.gitkeep
 
+# Cloud Architecture — private by default, same as the rest of this vault.
+# Un-ignore explicitly (like HTB Writeups/<target>.md) once reviewed and
+# ready to share. Contains only synthetic demo data by design — never drop
+# a real AWS account export in here without re-checking this rule first.
+Cloud Architecture/*
+!Cloud Architecture/.gitkeep
+
+# Per-target exploit code/evidence — same retired-only rule as HTB Writeups/
+# (CLAUDE.md's Publishing rule), just in code+evidence form: captured
+# hashes, wordlists, and working exploit chains for boxes that aren't
+# retired yet are at least as sensitive as a prose writeup of the same box.
+# Un-ignore a specific target's subfolder only once it's confirmed retired,
+# e.g. "!Tooling and Scripts/exploits/<target>/".
+Tooling and Scripts/exploits/*
+!Tooling and Scripts/exploits/.gitkeep
+
+# CTF Notes — in-progress notes plus full challenge source dumps (which
+# include the challenge's own flag.txt). Not ours to publish regardless of
+# progress/retirement status, so this stays private unlike HTB Writeups/.
+CTF Notes/*
+!CTF Notes/.gitkeep
+
+# Bug bounty programs — real production targets, real scope/findings/report
+# data, one top-level folder per program (Bug Bounty - <Program>/), kept
+# deliberately separate rather than nested under one shared folder. Unlike
+# HTB Writeups/, there is NO retired-target carve-out here: bounty findings
+# involve live systems and often real user data, and stay private
+# indefinitely regardless of program/disclosure status.
+Bug Bounty - */
+
 # Python virtualenv — regenerate from Tooling and Scripts/htb_connect.py's
 # docstring instead of committing it
 Tooling and Scripts/.venv/

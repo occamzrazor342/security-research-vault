@@ -310,6 +310,26 @@ def cmd_vpn_download(args):
 
 
 def cmd_submit(args):
+    # KNOWN GAP (2026-07-18): pyhackthebox's Machine.submit() posts to
+    # "machine/own", which 404s ("route ... could not be found") against the
+    # real v4 API when authenticated via an App Token, not a session cookie.
+    # This is NOT the same class of bug as the machine/list or
+    # get_active_machine gaps documented above (those are stale endpoints
+    # with a working replacement) -- probing found no working App-Token
+    # equivalent at all: "machine/submit" exists but is the "submit a new
+    # box for review" endpoint (expects download_link/writeup_link/
+    # hypervisor/accept_terms, nothing about an existing machine's flag),
+    # and no other plausible route name (machine/flag, machine/{id}/own,
+    # flag/own, flags, machine/submitflag, etc.) resolves. GET
+    # machine/activity/own *is* reachable via App Token (returns "Machine
+    # not found" without a valid id param), which rules out a blanket
+    # read-only token restriction -- so the leading theory is that flag
+    # submission specifically is deliberately excluded from the App Token
+    # scope (an anti-automation measure on HTB's part, not a bug to work
+    # around), but this isn't confirmed against HTB's own docs. Bottom
+    # line: this subcommand does not currently work. Flags still need to be
+    # submitted manually via the website until/unless a working endpoint is
+    # found.
     client = get_client()
     try:
         machine = client.get_machine(args.target)
@@ -324,6 +344,23 @@ def cmd_submit(args):
     except HtbException as e:
         fail(f"Submit failed: {e}")
     emit({"result": message})
+
+
+# KNOWN GAP (2026-07-19): no working endpoint found yet for a machine's
+# official synopsis/description text (the scenario blurb HTB shows on a
+# machine's info page, distinct from the box's own hosted content). The
+# pyhackthebox `Machine` object doesn't expose it (only `authors`, `ip`,
+# `is_release`, `spawn`, `start`, `submit`), and quick raw-API guesses
+# against a real App Token all 404'd: `machine/profile/<id>`,
+# `machine/info/<id>`, `machine/<id>`, `machine/get/<id>`. Not deep-dived
+# yet (didn't want to burn time on this mid-engagement) -- possibly the
+# same class of App-Token-scope restriction as the `cmd_submit` gap above,
+# or just the wrong endpoint name. If this matters later: check HTB's own
+# API docs (if published) or capture the real request the web UI makes via
+# browser devtools while logged in, rather than continuing to guess paths.
+# Until then, synopsis/description text has to come from the user manually
+# (either the HTB platform's info page, or the box's own hosted content --
+# both are worth checking, they're not always the same text).
 
 
 def build_parser():

