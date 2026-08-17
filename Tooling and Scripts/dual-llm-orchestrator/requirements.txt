@@ -1,0 +1,3 @@
+anthropic>=0.68
+openai>=1.50
+flask>=3.1

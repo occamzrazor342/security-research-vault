@@ -9,7 +9,9 @@ secrets.env
 *.pem
 *.key
 
-# Recon output / lab-specific (private repo territory)
+# Recon output / lab-specific (private repo territory). Subfoldered by
+# content type (Machines/Sherlocks/Fortresses) purely for organization --
+# the whole tree stays private, nothing here is ever un-ignored.
 Recon Output/*
 !Recon Output/.gitkeep
 
@@ -22,11 +24,31 @@ CVE Watch/*
 !CVE Watch/.gitkeep
 
 # HTB Writeups: only RETIRED boxes may be public (see CLAUDE.md's
-# Publishing rule). Nothing is un-ignored by default -- once a specific box
-# is confirmed retired, add an explicit line below: "!HTB Writeups/<target>.md"
+# Publishing rule). Subfoldered by content type (Machines/Sherlocks/
+# Fortresses/Challenges). Nothing is un-ignored by default -- once a
+# specific box is confirmed retired, add an explicit line below in the
+# matching subfolder's block: "!HTB Writeups/Machines/<target>.md".
 HTB Writeups/*
 !HTB Writeups/.gitkeep
-!HTB Writeups/fries.md
+!HTB Writeups/Machines/
+!HTB Writeups/Sherlocks/
+!HTB Writeups/Fortresses/
+!HTB Writeups/Challenges/
+
+HTB Writeups/Machines/*
+!HTB Writeups/Machines/.gitkeep
+!HTB Writeups/Machines/fries.md
+!HTB Writeups/Machines/kobold.md
+!HTB Writeups/Machines/cobblestone.md
+
+HTB Writeups/Sherlocks/*
+!HTB Writeups/Sherlocks/.gitkeep
+
+HTB Writeups/Fortresses/*
+!HTB Writeups/Fortresses/.gitkeep
+
+HTB Writeups/Challenges/*
+!HTB Writeups/Challenges/.gitkeep
 
 # Leftover disconnected Obsidian vault stub, not part of the real project
 Security Guru/
@@ -37,55 +59,50 @@ Security Guru/
 Orchestration/*
 !Orchestration/.gitkeep
 !Orchestration/queues/
-Orchestration/queues/*
-!Orchestration/queues/.gitkeep
 
-# Cloud Architecture — private by default, same as the rest of this vault.
-# Un-ignore explicitly (like HTB Writeups/<target>.md) once reviewed and
-# ready to share. Contains only synthetic demo data by design — never drop
-# a real AWS account export in here without re-checking this rule first.
+# Paid third-party course material (OSAI+ etc.) — never public, no
+# retired-content carve-out like HTB gets. CLAUDE.md has stated this
+# unconditionally since it was added; this rule was missing until
+# 2026-08-16 (found via a pre-push dry-run, nothing was ever actually
+# pushed under the gap).
+OffSec Labs/*
+!OffSec Labs/.gitkeep
+
+# Claude-independent local-model (Qwen) agent harness — a separate,
+# still-evolving R&D project, not vault content. Likely graduates to its
+# own repo later; excluded here in the meantime rather than left to ride
+# along by accident (1.4GB+ as of 2026-08-16).
+LLM Training/*
+!LLM Training/.gitkeep
+
+# Local app state, not vault content
+.obsidian/
+.claude/scratch/
+
+# Cloud IAM privesc-graph engine — CLAUDE.md states this is private by
+# default like every other folder here, un-ignored explicitly per file
+# when ready to share (same pattern as HTB Writeups' retired-only rule).
+# No file has been cleared for that yet. This rule was missing entirely
+# until 2026-08-16 (found in the same pre-push gitignore audit).
 Cloud Architecture/*
 !Cloud Architecture/.gitkeep
 
-# Per-target exploit code/evidence — same retired-only rule as HTB Writeups/
-# (CLAUDE.md's Publishing rule), just in code+evidence form: captured
-# hashes, wordlists, and working exploit chains for boxes that aren't
-# retired yet are at least as sensitive as a prose writeup of the same box.
-# Un-ignore a specific target's subfolder only once it's confirmed retired,
-# e.g. "!Tooling and Scripts/exploits/<target>/".
-Tooling and Scripts/exploits/*
-!Tooling and Scripts/exploits/.gitkeep
-
-# CTF Notes — in-progress notes plus full challenge source dumps (which
-# include the challenge's own flag.txt). Not ours to publish regardless of
-# progress/retirement status, so this stays private unlike HTB Writeups/.
+# In-progress CTF challenge notes (standalone HTB Challenges + other CTF
+# platforms) -- had no privacy rule at all until 2026-08-16, meaning this
+# would have gone public wholesale on the next push. Applying this vault's
+# own default-private/explicit-opt-in principle (Agent Operating
+# Principles #7), same pattern as HTB Writeups: private by default,
+# un-ignore a specific challenge's writeup explicitly once there's an
+# actual reason to (e.g. a confirmed-retired HTB Challenge writeup drafted
+# to HTB Writeups/Challenges/ -- the raw working notes/source dumps here
+# stay private regardless). Found via a pre-push review after a real
+# example (a full challenge source bundle + its actual flag value) was
+# about to be swept in as a first-time oversight, not a decision.
 CTF Notes/*
 !CTF Notes/.gitkeep
 
-# Bug bounty programs — real production targets, real scope/findings/report
-# data, one top-level folder per program (Bug Bounty - <Program>/), kept
-# deliberately separate rather than nested under one shared folder. Unlike
-# HTB Writeups/, there is NO retired-target carve-out here: bounty findings
-# involve live systems and often real user data, and stay private
-# indefinitely regardless of program/disclosure status.
-Bug Bounty - */
-
-# Python virtualenv — regenerate from Tooling and Scripts/htb_connect.py's
-# docstring instead of committing it
-Tooling and Scripts/.venv/
-**/.venv/
-
-# Local/machine-specific Claude Code settings, not portfolio-relevant
-.claude/settings.local.json
-
-# Python build artifacts
-**/__pycache__/
-*.pyc
-
-# The git-setup scaffold zip itself — not part of the project
-*.zip
-
-# OS/editor cruft
-.DS_Store
-**/.obsidian/workspace*
-**/.obsidian/cache
+# Third-party cloned repos pulled down during exploitation (ghostlink's
+# Gogs instance) -- each carries its own nested .git, which breaks a
+# clone of this outer repo if committed as-is (git itself warns: "adding
+# embedded git repository"). Not ours to redistribute either way.
+**/gogs-repos-clone/

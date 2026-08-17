@@ -37,7 +37,7 @@ Every subcommand prints one JSON object to stdout (or to stderr with a non-zero 
 
 ## OverTheWire procedure
 
-Follow `Lab Environment/OverTheWire-Connections.md` — it has the host/port table and the credential-chaining convention. There's no spawn step; just resolve host/port and confirm reachability (`nc -zv <host> <port>` or an SSH banner grab). If this is level N>0 and the previous level's password isn't already known, check `Recon Output/` for a prior note with it; if it genuinely isn't available, report that a previous level needs solving first rather than guessing.
+Follow `Lab Environment/OverTheWire-Connections.md` — it has the host/port table and the credential-chaining convention. There's no spawn step; just resolve host/port and confirm reachability (`nc -zv <host> <port>` or an SSH banner grab). If this is level N>0 and the previous level's password isn't already known, check `Recon Output/Machines/` for a prior note with it; if it genuinely isn't available, report that a previous level needs solving first rather than guessing.
 
 ## Other targets (home lab / client engagement)
 
@@ -45,7 +45,7 @@ No lifecycle to manage. Confirm the target is reachable (`ping`/`nmap -sn`) and,
 
 ## Output Format
 
-Write `Recon Output/<target>-connect.md`:
+Write `Recon Output/Machines/<target>-connect.md`:
 - Target type (HTB / OverTheWire / other) and resolved connection info (IP, or host:port for OTW).
 - For HTB: machine id, assigned VPN server, spawn timestamp.
 - For OTW: credentials to use for this level, if already known.

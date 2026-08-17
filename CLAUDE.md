@@ -14,18 +14,60 @@ a scope doc stored in their own `Bug Bounty - <Program Name>/` folder (see
 categories, stop and ask before proceeding.
 
 ## Folder map
-- `HTB Writeups/` — raw notes + terminal output go in, polished writeups come
-  out. Writeup format: Recon → Foothold → Privesc → Root → Lessons Learned.
-  Also holds Sherlock (DFIR/forensics challenge) writeups — same folder and
-  same retired-only publishing rule, but a different internal structure
-  (Scenario → task-by-task walkthrough, no Foothold/Privesc/Root since
-  there's no shell involved); see "Sherlocks pipeline" below.
-- `Recon Output/` — drop raw nmap/gobuster/burp exports here. Ask me before
-  overwriting; append timestamped files instead. Also holds Sherlock working
-  notes/evidence (`<name>-sherlock.md`, `<name>-evidence/`) — same
-  always-private treatment as machine recon output.
+- `HTB Writeups/` and `Recon Output/` — both are subfoldered by content type,
+  the same four categories in each, so raw notes and their polished writeup
+  always live at a matching path:
+  - `Machines/` — regular HTB (and OverTheWire) machines. Raw notes +
+    terminal output go into `Recon Output/Machines/`, polished writeups come
+    out into `HTB Writeups/Machines/`. Writeup format: Recon → Foothold →
+    Privesc → Root → Lessons Learned.
+  - `Sherlocks/` — DFIR/forensics challenges. Working notes/evidence in
+    `Recon Output/Sherlocks/` (`<name>-sherlock.md`, `<name>-evidence/`),
+    polished writeups in `HTB Writeups/Sherlocks/` — same retired-only
+    publishing rule as Machines but a different internal structure
+    (Scenario → task-by-task walkthrough, no Foothold/Privesc/Root since
+    there's no shell involved); see "Sherlocks pipeline" below.
+  - `Fortresses/` — HTB's multi-host/multi-flag Fortress content. Working
+    notes in `Recon Output/Fortresses/`, polished writeups in
+    `HTB Writeups/Fortresses/`. No dedicated pipeline/agent yet — sessions so
+    far reuse `recon-agent`/`exploit-agent`/`privesc-agent` ad hoc against a
+    single running `<name>-entrypoint.md` notes file per Fortress instance.
+    Multi-session Fortress engagements have a real failure mode: a session
+    scoped narrowly to one lead won't surface a detail outside its own scope,
+    so a genuine clue (a literal page title, an odd string) can sit
+    unexamined for many sessions in a row. Mitigate this with a standing
+    **"Unresolved Signals"** table near the top of the notes file — log any
+    oddly-specific detail there the moment it's noticed even if out of the
+    current session's scope, mark it investigated/not, and read that table
+    (not just the prior session's own "recommended next steps") before
+    deciding what to dispatch next. Pair it with a **"Crown Jewels"**
+    table — one row per named objective (flag category, high-value host,
+    etc.), columns for access status (**already-accessible** vs.
+    **requires-further-work**, kept explicitly separate) and current
+    best-guess offensive value/mapping — and re-rank it, not just append
+    to it, every time a row in Unresolved Signals gets marked
+    investigated/resolved: a newly validated or invalidated signal can
+    change which objective is actually highest-value right now, even for
+    a lead that's mid-flight. `fortress-us-fort-1-entrypoint.md`'s
+    "Official flag categories" table is the working example of this
+    pattern (started before it had this name). See Agent Operating
+    Principles #9–10 for why both tables exist and how they're meant to
+    drive each other. Copy the format from
+    `Recon Output/Fortresses/fortress-us-fort-1-entrypoint.md` for the next
+    Fortress.
+  - `Challenges/` — standalone HTB Challenges (short, single-flag Web/Pwn/
+    Crypto/etc. puzzles, no OS/privesc chain). In-progress working notes for
+    these actually live in `CTF Notes/` (see below) rather than
+    `Recon Output/Challenges/` — that subfolder exists for structural parity
+    but `CTF Notes/` is the real home for challenge-in-progress material.
+    Polished writeups, if ever drafted, go in `HTB Writeups/Challenges/`.
+
+  Drop raw nmap/gobuster/burp exports into the matching `Recon Output/`
+  subfolder. Ask me before overwriting; append timestamped files instead.
 - `CVE Watch/` — running notes on CVEs relevant to my toolkit/targets.
-- `CTF Notes/` — in-progress challenge notes, not yet full writeups.
+- `CTF Notes/` — in-progress notes for standalone HTB Challenges (and other
+  non-HTB CTF platforms), not yet full writeups. One subfolder per
+  challenge.
 - `Tooling and Scripts/` — any helper scripts/agents built for this workflow,
   plus reusable-technique notes extracted from writeups. `Techniques
   Index.md` in here is a running, category-tagged index of generalizable
@@ -62,13 +104,28 @@ categories, stop and ask before proceeding.
   by default like every other folder here — un-ignore explicitly when ready
   to share. This is a defender/architect-side skill demonstration, distinct
   from the offense-only pipeline described above.
+- `OffSec Labs/` — one note per paid third-party course lab/module (OSAI+
+  so far), named `<Course> - <Module Name>.md`, same
+  Recon → Vulnerability → Exploitation → Lessons Learned shape as an HTB
+  writeup plus the Skills Required/Skills Learned front matter. No
+  dedicated pipeline/agent — worked ad hoc per module. Never public, no
+  retired-content carve-out like HTB gets (see "Publishing rule"): the
+  whole folder is git-ignored unconditionally. Any script built for a
+  module that's reusable beyond that one session (a payload generator, a
+  helper) goes in `OffSec Labs/scripts/`, named to match its module
+  (`<module-slug>.py`), with a short header docstring (what it builds,
+  which target/lab, how to rerun, what to edit to adapt it) since it'll be
+  read cold in a future session with none of this session's context —
+  linked back to from the module note's Exploitation section, not left
+  orphaned. This mirrors the general job-cleanup rule below, applied to
+  this specific folder.
 
 ## Autonomous agent pipeline
 Six subagents live in `.claude/agents/`: `connect-agent`, `recon-agent`,
 `exploit-agent`, `privesc-agent`, `writeup-agent` — one per phase of a
-box. Each reads its predecessor's notes from `Recon Output/<target>-*.md`
+box. Each reads its predecessor's notes from `Recon Output/Machines/<target>-*.md`
 and writes its own findings there; `writeup-agent` is the one that
-produces the final `HTB Writeups/<target>.md`. `connect-agent` runs first
+produces the final `HTB Writeups/Machines/<target>.md`. `connect-agent` runs first
 and resolves a bare target name into something actually reachable: it
 spawns HTB machines and confirms the VPN tunnel is up via the HTB API
 (`Tooling and Scripts/htb_connect.py`, wrapping `pyhackthebox` — needs
@@ -139,8 +196,8 @@ directly per Sherlock.
   undocumented Sherlock-specific endpoints found by live-probing the API
   directly, since `pyhackthebox` has no Sherlock support at all), works
   the tasks in order against the evidence, and writes findings to
-  `Recon Output/<name>-sherlock.md`. Drafts the final
-  `HTB Writeups/<name>.md` only when asked, once every task is answered.
+  `Recon Output/Sherlocks/<name>-sherlock.md`. Drafts the final
+  `HTB Writeups/Sherlocks/<name>.md` only when asked, once every task is answered.
   Never submits answers to HTB — same manual/opt-in boundary as machine
   flag submission.
   **Known gap:** the evidence archive can't be downloaded via the API —
@@ -148,8 +205,8 @@ directly per Sherlock.
   script's docstring for the full investigation). Evidence has to be
   downloaded by hand from the Sherlock's page
   (`https://app.hackthebox.com/sherlocks/<id>`) and extracted (zip
-  password `hacktheblue`) into `Recon Output/<name>-evidence/` before the
-  agent can start analysis.
+  password `hacktheblue`) into `Recon Output/Sherlocks/<name>-evidence/`
+  before the agent can start analysis.
 
 ## Bug bounty pipeline (2026-07-23, HackerOne first)
 A separate, deliberately more conservative track from the HTB pipeline
@@ -192,6 +249,19 @@ pieces have some track record.
   Watch note from a writeup that used it).
 - Prefer editing/creating files directly in this vault over just printing
   output to chat, unless I ask for a quick answer.
+- A background job's `$CLAUDE_JOB_DIR/tmp` is ephemeral — cleaned up when
+  the job is deleted. Any script written there that's reusable beyond the
+  immediate task (a payload generator, an exploit helper, anything worth
+  reaching for again) must get copied into a durable, findable spot in the
+  vault before the session ends — not left for me to dig out of a job
+  directory later. Default target: the folder the task's notes already
+  live in (e.g. `OffSec Labs/scripts/`, `Tooling and Scripts/`), named
+  descriptively, with a short header comment (what it does, how to rerun
+  it, what to edit to adapt it) since it'll be read cold with none of the
+  session's context — and link to it from whatever note documents the
+  task, don't leave it orphaned. One-off debug/investigation scratch (a
+  trace dump, a throwaway offset check) can stay in job tmp; the bar is
+  "would I want to reach for this again," not "did I write a .py file."
 
 ## Boundaries
 - HTB/THM/lab targets: full exploitation help, including writing working
@@ -205,10 +275,13 @@ pieces have some track record.
   targets) — flag it and ask rather than assuming scope.
 
 ## Publishing rule (public GitHub repo)
-- Only draft/commit HTB writeups for RETIRED machines. `.gitignore` holds
-  back all of `HTB Writeups/*` by default — once a specific box is
-  confirmed retired, add an explicit `!HTB Writeups/<target>.md` line to
-  `.gitignore` to un-ignore just that one file, then commit it.
+- Only draft/commit HTB writeups for RETIRED machines (and, by the same
+  rule, retired Sherlocks/Fortresses/Challenges). `.gitignore` holds back
+  all of `HTB Writeups/*` by default, per content-type subfolder — once a
+  specific box is confirmed retired, add an explicit
+  `!HTB Writeups/Machines/<target>.md` line (or the matching
+  `Sherlocks/`/`Fortresses/`/`Challenges/` path) to `.gitignore` to
+  un-ignore just that one file, then commit it.
 - Never commit files matching secrets, API keys, `.ovpn` configs, or client
   scope docs — these belong in the private local vault only, per
   `.gitignore`.

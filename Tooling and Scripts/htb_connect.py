@@ -17,43 +17,95 @@ It does not start the OpenVPN tunnel itself -- that needs `sudo`, which
 can't run non-interactively here. `vpn-download` prints the exact
 `sudo openvpn --config ...` command to run by hand.
 
-KNOWN GAP -- non-"labs" VPN products: pyhackthebox's get_active_machine()
-calls get_current_vpn_server() internally to build the MachineInstance,
-which only queries the default paid "labs" product's `connections`
-response (`data['lab']['assigned_server']`); for any other product
-(free_lab, sp_lab, ...) that lookup 404s/KeyErrors, and
-get_active_machine_or_none() below normalizes that into "nothing
-active" -- wrong whenever the real session lives on one of those other
-products. Confirmed on TWO separate products so far:
-  - "sp_lab" (Starting Point) -- 2026-07-16, spawning "Meow" (id 394)
-    worked server-side and showed up via a raw `machine/active` call,
-    while `status` reported null throughout.
-  - "free_lab" (free-tier regular machines) -- 2026-07-16, "kobold"
-    (id 856) was already active on this product from prior manual work;
-    `status` showed null and `spawn kobold` failed with "You already
-    have an active instance" -- a real, in-scope target got misreported
-    as spawnable when it was already up and reachable. The same gap
-    also broke `stop`/`reset` (both built on
-    get_active_machine_or_none()) -- 2026-07-17, `stop` refused with
-    "No active machine to stop" while kobold was genuinely still up.
-`status`/`stop`/`reset` now self-heal via get_active_machine_raw() below:
-when the pyhackthebox object lookup comes back empty, they fall back to
-the same raw `machine/active` call (which doesn't go through
-get_current_vpn_server() and so isn't affected) and act on that instead
-of trusting a bare "nothing active". `spawn`'s "already have an active
-instance" error is a correct-but-confusing signal once you know this --
-it means status/stop's fallback should be checked before assuming a
-target really is free to spawn. Not fixed at the root: a proper fix
-means pyhackthebox querying every VPN product rather than just the
-default, which it doesn't support out of the box.
+KNOWN GAP (historical, 2026-07-16/17) -- non-"labs" VPN products:
+pyhackthebox's get_active_machine() calls get_current_vpn_server()
+internally to build the MachineInstance, which only queried the default
+paid "labs" product's `connections` response
+(`data['lab']['assigned_server']`); for any other product (free_lab,
+sp_lab, ra_lab, ...) that lookup 404s/KeyErrors, and
+get_active_machine_or_none() normalized that into "nothing active" --
+wrong whenever the real session lived on one of those other products.
+Confirmed on THREE separate products:
+  - "sp_lab" (Starting Point) -- 2026-07-16, spawning "Meow" (id 394).
+  - "free_lab" (free-tier regular machines) -- 2026-07-16/17, "kobold"
+    (id 856).
+  - "ra_lab" (Release Arena) -- 2026-08-08/09, "DanglingTree" (id 936).
+
+RESOLVED (2026-08-09) -- superseded by a newer, unified API surface found
+by inspecting the current web app's JS bundles (app.hackthebox.com's
+`/assets/*.js`, specifically `common-api-*.js` and
+`useCurrentActiveContent-*.js`) after the old per-product raw-endpoint
+workarounds below stopped working for Release Arena (`release_arena/active`
+and `release_arena/spawn` now both 404 outright -- HTB retired that whole
+`release_arena/*` v4 namespace):
+  - There is now a **v5 API** (`https://labs.hackthebox.com/api/v5/`,
+    distinct from the v4 base this script otherwise uses) with
+    `GET virtual_machine/active`, which returns the currently active
+    instance -- of ANY type/product (regular machine, free machine,
+    Starting Point, Release Arena, even Sherlocks) -- uniformly, with no
+    release_arena flag needed at all. This is what the web app's own
+    "currently playing" indicator calls. `get_active_machine_v5()` below
+    wraps it with a raw `requests` call (pyhackthebox's HTBClient has no
+    v5 support and is hardcoded to one `_api_base`). This fully supersedes
+    the old `machine/active` / `release_arena/active` v4 raw fallbacks --
+    confirmed 2026-08-09 that v4 `machine/active` returned a stale/wrong
+    `{"info": null}` for a release arena machine that v5
+    `virtual_machine/active` correctly showed as active.
+  - Spawning is now **fully unified**: `POST /vm/spawn` (v4, same endpoint
+    used for regular machines) with body `{"machine_id": <id>}` spawns
+    ANY machine type, Release Arena included -- the server infers the
+    right pool from the machine itself. Confirmed live 2026-08-09
+    (`{"message":"Machine deployed to lab. Playing on the release arena
+    server!","success":true}` for DanglingTree, id 936). The old
+    `machine.spawn(release_arena=True)` code path in pyhackthebox
+    (`release_arena/spawn`, gated behind an `is_release` check that itself
+    calls the now-404ing bare `connections` endpoint) is dead code against
+    the current API -- do not call it. Same story for stop/reset:
+    `POST /vm/terminate` and `POST /vm/reset`, each with an explicit
+    `{"machine_id": <id>}` body, work for every product; the
+    `release_arena/terminate` / `release_arena/reset` endpoints this
+    script used to call for the release-arena case now 404.
+  - **Hazard confirmed the hard way, 2026-08-09**: `POST vm/terminate`
+    with an EMPTY body (`{}`, sent as a "does this route exist" probe, not
+    intended to do anything) did not error -- it silently terminated the
+    real active instance (DanglingTree) immediately, HTTP 200
+    `{"message":"Machine terminated.","success":true}`. The endpoint
+    apparently defaults to acting on the caller's current active instance
+    when no `machine_id` is given, rather than requiring/validating it.
+    **Never call `vm/terminate` or `vm/reset` without an explicit,
+    confirmed `machine_id` bound to a real raw active-machine lookup** --
+    every call site in this file now does this. (Recovered same-session by
+    immediately re-spawning via `vm/spawn`; no lasting harm, but this is a
+    real footgun worth flagging for anyone else probing this API by hand.)
+  - The bare `connections` endpoint (used internally by pyhackthebox's
+    `get_current_vpn_server(release_arena=False)` AND `Machine.is_release`)
+    is ALSO now 404, independent of the release-arena-specific gap above --
+    this breaks even the plain default "labs" product's "current server"
+    lookup. `connections/servers?product=<name>` (which
+    `get_all_vpn_servers()` already used correctly) is the working
+    replacement and has an `assigned` key with the same data.
+    `get_vpn_server_info()` below wraps this directly. Confirmed working
+    product values: `labs` (regular + free machines), `release_arena`,
+    `starting_point` (note: this is NOT the same string as the `lab_server`
+    field on a machine/instance, which uses `sp_lab`/`ra_lab`/`free_lab`/
+    `labs` -- see `LAB_SERVER_TO_PRODUCT` below for the mapping between the
+    two).
+  - Net effect: `status`/`spawn`/`stop`/`reset` no longer need the
+    `--release-arena` flag at all (they detect the active machine's real
+    type via v5 and act generically) -- the flag is kept only for the
+    VPN-server-listing commands (`vpn-servers`/`vpn-current`/`vpn-switch`/
+    `vpn-download`), which still need to know which product's server list
+    to show when nothing is active yet to introspect.
 """
 import argparse
 import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
+import requests
 from hackthebox import (
     CannotSwitchWithActive,
     HtbException,
@@ -81,9 +133,24 @@ def emit(payload):
 # endpoint as of 2026-07 -- the real API lives here. Override explicitly
 # rather than relying on the library's stale default.
 API_BASE = "https://labs.hackthebox.com/api/v4/"
+# Newer unified active-instance endpoint lives under a separate v5 base --
+# see "RESOLVED (2026-08-09)" in the module docstring. pyhackthebox has no
+# support for this at all, so it's queried with a plain `requests` call.
+API_BASE_V5 = "https://labs.hackthebox.com/api/v5/"
+
+# Maps a machine/instance's `lab_server` field (as returned by
+# machine/active, virtual_machine/active, etc.) to the `product` query
+# param `connections/servers?product=<x>` expects -- these are NOT the same
+# string. Unknown/unseen lab_server values fall back to "labs".
+LAB_SERVER_TO_PRODUCT = {
+    "ra_lab": "release_arena",
+    "sp_lab": "starting_point",
+    "free_lab": "labs",
+    "labs": "labs",
+}
 
 
-def get_client():
+def get_token():
     token = os.environ.get("HTB_API_TOKEN")
     if not token:
         fail(
@@ -92,7 +159,11 @@ def get_client():
             "(e.g. in ~/.zshrc: export HTB_API_TOKEN=\"...\"), then open a "
             "new shell."
         )
-    return HTBClient(app_token=token, api_base=API_BASE)
+    return token
+
+
+def get_client():
+    return HTBClient(app_token=get_token(), api_base=API_BASE)
 
 
 def tun_interfaces():
@@ -112,88 +183,177 @@ def write_connection_snapshot(data):
     CONNECTION_FILE.write_text(json.dumps(data, indent=2, default=str))
 
 
-def get_active_machine_or_none(client, release_arena):
-    """get_active_machine raises NotFoundException (a 404 from machine/active)
-    when nothing is spawned, rather than returning None -- normalize that."""
+def get_active_machine_v5(token):
+    """Query the v5 unified active-machine endpoint -- see "RESOLVED
+    (2026-08-09)" in the module docstring. Works uniformly across every
+    VPN product (labs, free_lab, starting_point/sp_lab, release_arena/
+    ra_lab). Returns the raw `info` dict (id/name/ip/lab_server/
+    vpn_server_id/isSpawning/expires_at/...) or None if nothing is active
+    (the real "nothing active" response is HTTP 200 with `{"info": null}`,
+    not a 404).
+
+    Gotcha found 2026-08-09: `requests`' default User-Agent
+    (`python-requests/x.x`) gets a flat WAF-level 404 (nginx's own error
+    page, not HTB's) on this v5 host -- an explicit User-Agent of ANY value
+    (tested pyhackthebox's own "htb-api/0.5.2", curl's UA, and a generic
+    browser UA) is accepted fine. Must set one explicitly here; the v4 base
+    doesn't have this problem because pyhackthebox's do_request() already
+    always sets USER_AGENT.
+    """
     try:
-        return client.get_active_machine(release_arena=release_arena)
-    except NotFoundException:
-        return None
+        r = requests.get(
+            API_BASE_V5 + "virtual_machine/active",
+            headers={"Authorization": f"Bearer {token}", "User-Agent": "htb-api/0.5.2"},
+            timeout=15,
+        )
+    except requests.RequestException as e:
+        raise HtbException(f"v5 active-machine check failed: {e}")
+    if r.status_code == 404:
+        # A real 404 here (as opposed to the WAF/User-Agent gotcha above,
+        # which is now avoided) would mean the endpoint itself moved again
+        # -- surface that distinctly rather than silently treating it as
+        # "nothing active" and masking a future API change.
+        raise HtbException(
+            "v5 active-machine check 404'd even with an explicit User-Agent "
+            "set -- the endpoint may have moved again, don't trust this as "
+            "'nothing active'."
+        )
+    try:
+        data = r.json()
+    except ValueError:
+        raise HtbException(
+            f"v5 active-machine check returned non-JSON (HTTP {r.status_code})"
+        )
+    return data.get("info") or None
 
 
-def get_active_machine_raw(client, release_arena):
-    """Fallback for when get_active_machine_or_none() wrongly says "nothing
-    active" (see KNOWN GAP above): hits `machine/active`/`release_arena/active`
-    directly, without the get_current_vpn_server() call that 404s/KeyErrors
-    for non-"labs" VPN products. Returns the raw `info` dict (id/name/ip/
-    lab_server/vpn_server_id/expires_at) or None if truly nothing is active."""
-    endpoint = "release_arena/active" if release_arena else "machine/active"
+def poll_for_active_machine(token, machine_id, attempts=10, delay=5):
+    """After a spawn call reports success, the instance can take a few
+    seconds to actually appear via the v5 active-machine check (and often
+    another 30-60s beyond that to finish booting far enough to answer
+    ICMP/TCP -- verifying that is the CLI caller's job, not this
+    function's). Poll briefly for it to appear at all before giving up."""
+    for _ in range(attempts):
+        raw = get_active_machine_v5(token)
+        if raw is not None and str(raw.get("id")) == str(machine_id):
+            return raw
+        time.sleep(delay)
+    return None
+
+
+def get_vpn_server_info(client, product):
+    """Raw replacement for HTBClient.get_current_vpn_server(): its
+    release_arena=False branch calls the bare `connections` endpoint, which
+    404s against the real API as of 2026-08 (independent of the
+    non-"labs"-product KNOWN GAP -- this breaks even the plain default
+    "labs" product). `connections/servers?product=<x>` (which
+    get_all_vpn_servers() already uses correctly) has an `assigned` key
+    with the same data and is confirmed working for "labs", "release_arena",
+    and "starting_point". Returns the raw `assigned` dict (id/friendly_name/
+    location/...) or None."""
     try:
-        resp = client.do_request(endpoint)
-    except NotFoundException:
+        data = client.do_request(f"connections/servers?product={product}")["data"]
+    except (NotFoundException, KeyError):
         return None
-    return resp.get("info") or None
+    return data.get("assigned")
+
+
+def get_current_vpn_server_obj(client, release_arena):
+    """Returns a proper pyhackthebox VPNServer object (needed for
+    .download()/.switch()) for whichever product is currently assigned.
+    release_arena=True still works via pyhackthebox's own
+    get_current_vpn_server() (connections/servers?product=release_arena is
+    a live endpoint). release_arena=False is worked around: look up the
+    assigned server id via get_vpn_server_info() (which doesn't hit the
+    broken bare `connections` endpoint) and match it against
+    get_all_vpn_servers(), which already uses the working
+    connections/servers?product=labs endpoint internally."""
+    if release_arena:
+        try:
+            return client.get_current_vpn_server(release_arena=True)
+        except NotFoundException:
+            return None
+    assigned = get_vpn_server_info(client, "labs")
+    if assigned is None:
+        return None
+    for s in client.get_all_vpn_servers(release_arena=False):
+        if s.id == assigned.get("id"):
+            return s
+    return None
 
 
 def cmd_status(args):
     client = get_client()
+    token = get_token()
     result = {"tun_interfaces": tun_interfaces()}
     result["vpn_tunnel_up"] = bool(result["tun_interfaces"])
 
-    try:
-        instance = get_active_machine_or_none(client, args.release_arena)
-    except HtbException as e:
-        fail(f"Failed to query active machine: {e}")
-
-    if instance is not None:
+    raw = get_active_machine_v5(token)
+    if raw is not None:
         result["active_machine"] = {
-            "name": instance.machine.name,
-            "id": instance.machine.id,
-            "ip": instance.ip,
-            "vpn_server": instance.server.friendly_name,
+            "name": raw.get("name"),
+            "id": raw.get("id"),
+            "ip": raw.get("ip"),
+            "type": raw.get("type"),
+            "lab_server": raw.get("lab_server"),
+            "vpn_server_id": raw.get("vpn_server_id"),
+            "is_spawning": raw.get("isSpawning"),
+            "expires_at": raw.get("expires_at"),
         }
-        write_connection_snapshot({"target": instance.machine.name, **result["active_machine"]})
+        write_connection_snapshot({"target": raw.get("name"), **result["active_machine"]})
+        product = LAB_SERVER_TO_PRODUCT.get(raw.get("lab_server"), "labs")
     else:
-        raw = get_active_machine_raw(client, args.release_arena)
-        if raw is None:
-            result["active_machine"] = None
-        else:
-            result["active_machine"] = {
-                "name": raw.get("name"),
-                "id": raw.get("id"),
-                "ip": raw.get("ip"),
-                "vpn_server": None,
-                "lab_server": raw.get("lab_server"),
-                "note": "recovered via raw machine/active fallback -- see KNOWN GAP",
-            }
-            write_connection_snapshot({"target": raw.get("name"), **result["active_machine"]})
+        result["active_machine"] = None
+        # Nothing active to introspect -- fall back to the CLI flag as a
+        # hint for which product's assigned server to report.
+        product = "release_arena" if args.release_arena else "labs"
 
-    try:
-        server = client.get_current_vpn_server(release_arena=args.release_arena)
-        result["vpn_server_assigned"] = server.friendly_name if server else None
-    except HtbException:
-        result["vpn_server_assigned"] = None
+    server = get_vpn_server_info(client, product)
+    result["vpn_server_assigned"] = server.get("friendly_name") if server else None
 
     emit(result)
 
 
 def cmd_spawn(args):
     client = get_client()
+    token = get_token()
     try:
         machine = client.get_machine(args.target)
     except NotFoundException:
         fail(f"No machine found matching '{args.target}'")
 
+    # Unified spawn endpoint -- see "RESOLVED (2026-08-09)" in the module
+    # docstring. No release_arena branching needed: the server infers the
+    # right pool from machine_id alone.
     try:
-        instance = machine.spawn(release_arena=args.release_arena)
+        resp = client.do_request("vm/spawn", json_data={"machine_id": machine.id})
+    except NotFoundException:
+        fail("Spawn failed: vm/spawn endpoint not found (HTB API may have changed again).")
     except HtbException as e:
         fail(f"Spawn failed: {e}")
+
+    if resp.get("success") not in (True, 1, "1"):
+        fail(f"Spawn failed: {resp.get('message', resp)}", spawn_response=resp)
+
+    raw = poll_for_active_machine(token, machine.id)
+    if raw is None:
+        fail(
+            "Spawn call reported success but the machine never showed up "
+            "as active via the v5 status check after polling -- verify "
+            "manually (`status`) before retrying, since retrying a "
+            "genuinely-succeeded spawn will hit either the 'already have "
+            "an active instance' guard or the ~60s between-machine-actions "
+            "cooldown.",
+            spawn_response=resp,
+        )
 
     result = {
         "name": machine.name,
         "id": machine.id,
-        "ip": instance.ip,
-        "vpn_server": instance.server.friendly_name,
+        "ip": raw.get("ip"),
+        "lab_server": raw.get("lab_server"),
+        "vpn_server_id": raw.get("vpn_server_id"),
+        "expires_at": raw.get("expires_at"),
     }
     write_connection_snapshot({"target": machine.name, **result})
     emit(result)
@@ -201,44 +361,29 @@ def cmd_spawn(args):
 
 def cmd_stop(args):
     client = get_client()
-    instance = get_active_machine_or_none(client, args.release_arena)
-    if instance is not None:
-        instance.stop()
-        emit({"stopped": instance.machine.name})
-        return
-
-    raw = get_active_machine_raw(client, args.release_arena)
+    token = get_token()
+    raw = get_active_machine_v5(token)
     if raw is None:
         fail("No active machine to stop.")
-    if args.release_arena:
-        client.do_request("release_arena/terminate", post=True)
-    else:
-        client.do_request("vm/terminate", json_data={"machine_id": raw["id"]})
-    emit({"stopped": raw.get("name"), "note": "stopped via raw machine/active fallback -- see KNOWN GAP"})
+    # ALWAYS pass machine_id explicitly -- confirmed 2026-08-09 that an
+    # empty-bodied POST to vm/terminate still terminates the caller's
+    # current active instance rather than erroring. See docstring hazard
+    # note.
+    client.do_request("vm/terminate", json_data={"machine_id": raw["id"]})
+    emit({"stopped": raw.get("name"), "id": raw.get("id")})
 
 
 def cmd_reset(args):
     client = get_client()
-    instance = get_active_machine_or_none(client, args.release_arena)
-    if instance is not None:
-        try:
-            instance.reset()
-        except HtbException as e:
-            fail(f"Reset failed: {e}")
-        emit({"reset_requested": instance.machine.name})
-        return
-
-    raw = get_active_machine_raw(client, args.release_arena)
+    token = get_token()
+    raw = get_active_machine_v5(token)
     if raw is None:
         fail("No active machine to reset.")
     try:
-        if args.release_arena:
-            client.do_request("release_arena/reset", json_data={"machine_id": raw["id"]})
-        else:
-            client.do_request("vm/reset", json_data={"machine_id": raw["id"]})
+        client.do_request("vm/reset", json_data={"machine_id": raw["id"]})
     except HtbException as e:
         fail(f"Reset failed: {e}")
-    emit({"reset_requested": raw.get("name"), "note": "reset via raw machine/active fallback -- see KNOWN GAP"})
+    emit({"reset_requested": raw.get("name"), "id": raw.get("id")})
 
 
 def cmd_vpn_servers(args):
@@ -259,14 +404,18 @@ def cmd_vpn_servers(args):
 
 def cmd_vpn_current(args):
     client = get_client()
-    try:
-        server = client.get_current_vpn_server(release_arena=args.release_arena)
-    except NotFoundException:
-        server = None
+    product = "release_arena" if args.release_arena else "labs"
+    server = get_vpn_server_info(client, product)
     if server is None:
         emit({"current": None})
     else:
-        emit({"id": server.id, "friendly_name": server.friendly_name, "location": server.location})
+        emit(
+            {
+                "id": server.get("id"),
+                "friendly_name": server.get("friendly_name"),
+                "location": server.get("location"),
+            }
+        )
 
 
 def cmd_vpn_switch(args):
@@ -290,10 +439,7 @@ def cmd_vpn_switch(args):
 
 def cmd_vpn_download(args):
     client = get_client()
-    try:
-        server = client.get_current_vpn_server(release_arena=args.release_arena)
-    except NotFoundException:
-        server = None
+    server = get_current_vpn_server_obj(client, args.release_arena)
     if server is None:
         fail("No VPN server currently assigned -- spawn a machine or switch servers first.")
     dest_dir = VAULT_ROOT / "Lab Environment" / "vpn"

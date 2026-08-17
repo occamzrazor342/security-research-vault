@@ -98,5 +98,5 @@ What it does *not* automatically get you:
   capabilities and a real host-root escape via `core_pattern` — see
   [[localstack-codebuild-privileged-mode-container-escape]] for that
   follow-on technique. Full command-by-command trail in
-  `Recon Output/nimbus-privesc.md`; reusable tooling in
+  `Recon Output/Machines/nimbus-privesc.md`; reusable tooling in
   `Tooling and Scripts/exploits/nimbus/localstack_unauth_lambda_rce.py`.

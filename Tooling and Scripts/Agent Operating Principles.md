@@ -93,6 +93,54 @@ be committed anyway. `.gitignore` is a hypothesis about what shouldn't be
 there; the dry-run file list is the actual test of it. Run the test every
 time, not just the time you write the rule.
 
+## 9. Run an assumption register, not a memory of conclusions — scoped negative results expire when new evidence arrives
+
+`[[OSAI+ - Threat Modeling for AI-Enabled Targets]]`'s Assumption Register
+(observation → hypothesis → confidence → source → status: UNVALIDATED →
+VALIDATED/INVALIDATED, live and re-checked, not written once) is the
+correct model for how findings should persist across a multi-session
+pipeline — and Cobblestone's five stalled sessions are what it costs to
+skip it. "SQLi FILE-write is dead" got carried forward as a settled fact
+after testing exactly two paths (`/tmp`, MySQL's datadir); the accurate
+version was the narrower, still-live hypothesis "FILE-write fails against
+those two specific paths, arbitrary-path write status UNVALIDATED." Two
+sessions later, an AppArmor profile explicitly naming
+`/var/www/html/skins/*` as writable got read and filed as disclosed source
+material — with no open register entry for it to reopen, so it never
+reconnected to the closed FILE-write question it should have re-triggered.
+The module's own named trap, generalized beyond AI targets: absence of
+evidence against the paths actually tried is not evidence of absence
+everywhere. A stage agent's "vector exhausted" report should read like a
+register update (what was tested, what's still open) so the next session
+can re-open the right row instead of inheriting a flattened conclusion.
+
+## 10. Re-rank crown jewels every time the assumption register changes — orient on current value, not the path already in motion
+
+Pairs directly with #9 and comes from the same OSAI+ module's **Crown Jewel
+Ranking Under Uncertainty**: ranking is offensive value *given current
+knowledge*, re-done every time an assumption validates or invalidates —
+not a list set once at the start and executed against on autopilot. Two
+things the ranking must do explicitly every time it's redone: separate
+**already-accessible** targets from **requires-further-work** ones (don't
+keep planning how to reach something already in hand), and check whether
+a newly-validated/invalidated row changes what the *actual* highest-value
+objective is, even mid-path. Cobblestone's principle-#9 incident doubles
+as the example here: the moment the `skins/` FILE-write validated,
+crown-jewel re-ranking should have immediately dropped the admin-bot XSS
+wait from "the plan" to "no longer needed" — instead it kept running in
+parallel for a while out of inertia, not because it still ranked highest.
+In multi-asset engagements (a Fortress's multiple flags, a bounty
+program's multiple in-scope assets) this is a standing table, not a
+one-time list — see the Fortress section of the root `CLAUDE.md` for the
+concrete format (`fortress-us-fort-1-entrypoint.md`'s flag-categories
+table is the working example: named target, access status, current
+best-guess value/mapping, re-ranked inline as signals resolve). For a
+single-target engagement (a normal HTB machine) the "crown jewel" is just
+user.txt/root.txt, so the table adds little — the discipline that
+transfers is still checking, after every validated/invalidated finding,
+whether the currently-running approach is still the best one rather than
+just the first one.
+
 ---
 
 None of this is specific to hacking HTB boxes. It's the same discipline

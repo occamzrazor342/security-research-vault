@@ -1,0 +1,23 @@
+# Run transcripts (notes.py) -- real target IPs, exploit techniques,
+# captured flags. Same private-by-default posture as the vault's
+# `Recon Output/*` (see the top-level .gitignore); this is the fallback
+# location used when --target-name isn't given, so it needs its own rule.
+runs/
+
+# Third-party enumeration/exploit scripts the operator drops in for
+# serve_payloads (linpeas.sh, winPEAS.exe, pspy64, ...) -- never bundled
+# or committed here, both for licensing (GPL/PEASS-ng) and because they
+# go stale independently of this harness. See README.md's Setup section.
+payloads/
+
+# Real secrets (ANTHROPIC_API_KEY etc.) -- see .env.example for the
+# template and config.py's _load_dotenv() for how it's read.
+.env
+
+# Local Python virtualenv -- never bundle interpreter/deps, they're
+# platform-specific and reproducible from a fresh `python -m venv` +
+# `pip install`. Was missing until 2026-08-16 (found in the same pre-push
+# gitignore audit as the top-level OffSec Labs//LLM Training/ gap) --
+# 69MB that would have been swept into the repo on the next `git add .`.
+.venv/
+__pycache__/

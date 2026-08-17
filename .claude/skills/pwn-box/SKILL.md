@@ -50,30 +50,30 @@ if that goal was previously blocked and is now being resumed.
 
 Run the pipeline via the Agent tool, fully autonomously — do not pause
 for user confirmation between stages. Each stage reads its predecessor's
-output from `Recon Output/`, so run them strictly in order and let each
+output from `Recon Output/Machines/`, so run them strictly in order and let each
 finish before starting the next:
 
 1. **Dispatch `connect-agent`** with the target (HTB machine name, OTW
    `<wargame><level>`, or a bare host for a home lab/client engagement).
-   Wait for it to write `Recon Output/<target>-connect.md`. If it reports
+   Wait for it to write `Recon Output/Machines/<target>-connect.md`. If it reports
    blocked (most commonly: the HTB VPN tunnel isn't up, which it cannot
    start itself since that needs an interactive `sudo` password), this is
    a real hard stop (see below) — record it and skip straight to Goal
    Relay (step 6).
 2. **Dispatch `recon-agent`** with the same target. Wait for it to write
-   `Recon Output/<target>-recon.md`.
+   `Recon Output/Machines/<target>-recon.md`.
 3. **Dispatch `exploit-agent`** with the same target. It reads the recon
    findings itself — don't re-paste them into its prompt, just confirm
    the target and that recon is done. Wait for
-   `Recon Output/<target>-foothold.md`. If it reports no viable vector
+   `Recon Output/Machines/<target>-foothold.md`. If it reports no viable vector
    found, this is a soft block — apply the Recon-Escalation Retry Loop
    below before treating it as a hard stop.
 4. **Dispatch `privesc-agent`** with the same target. Wait for
-   `Recon Output/<target>-privesc.md`. Same handling: a "vectors
+   `Recon Output/Machines/<target>-privesc.md`. Same handling: a "vectors
    exhausted" report is a soft block, not an automatic hard stop — apply
    the retry loop below.
 5. **Dispatch `writeup-agent`** with the same target. Wait for
-   `HTB Writeups/<target>.md` (and any new `Tooling and Scripts/` notes).
+   `HTB Writeups/Machines/<target>.md` (and any new `Tooling and Scripts/` notes).
 6. **Dispatch `goal-relay-agent`** with the target, regardless of whether
    the goal finished cleanly or got marked blocked above. Take the
    returned Artifact URL and write it into the goal's `reportUrl` field

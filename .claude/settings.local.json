@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"Tooling and *)",
+      "Bash('Tooling and Scripts/.venv/bin/python3' -c ' *)",
+      "Read(//tmp/**)",
+      "Bash(sudo nmap -sC -sV -Pn -oN /tmp/kobold-top1000.nmap 10.129.245.50)",
+      "Bash(nmap -sC -sV -Pn -oN /tmp/kobold-top1000.nmap 10.129.245.50)"
+    ]
+  }
+}

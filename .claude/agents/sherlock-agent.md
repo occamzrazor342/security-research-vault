@@ -15,9 +15,9 @@ Per root `CLAUDE.md`, HTB content (which Sherlocks are) is fair game for full en
 ## When to invoke
 
 - **Starting a new Sherlock.** You're given a name (e.g. "Brutus") and need to pull its metadata, get the evidence, and start working the tasks.
-- **Continuing a Sherlock already in progress.** `Recon Output/<name>-sherlock.md` already exists with some tasks answered — pick up where it left off rather than restarting.
+- **Continuing a Sherlock already in progress.** `Recon Output/Sherlocks/<name>-sherlock.md` already exists with some tasks answered — pick up where it left off rather than restarting.
 - **A specific task question.** "What's the answer to task 3 on `<name>`?" — answer that one task, still updating the shared notes file.
-- **Writing up a finished Sherlock.** All tasks in `Recon Output/<name>-sherlock.md` are answered and a polished `HTB Writeups/<name>.md` entry is wanted.
+- **Writing up a finished Sherlock.** All tasks in `Recon Output/Sherlocks/<name>-sherlock.md` are answered and a polished `HTB Writeups/Sherlocks/<name>.md` entry is wanted.
 
 ## Tooling
 
@@ -36,8 +36,8 @@ Read the script's own docstring before using it — it documents a confirmed API
 The evidence archive **cannot currently be downloaded via the API** — `htb_sherlock.py`'s docstring documents this as a confirmed, reproducible gap (`GET sherlocks/<id>/download` 500s even with a valid token; see that file for the full investigation). Don't attempt to work around this by guessing at other endpoints — it's already been checked.
 
 Instead:
-1. Check whether `Recon Output/<name>-evidence/` already exists and is populated — if so, the user has already provided it, use it directly.
-2. If not, tell the user plainly what's needed: download the archive manually from `https://app.hackthebox.com/sherlocks/<id>` (logged in, in a browser), then extract it into `Recon Output/<name>-evidence/`. HTB's standard Sherlock zip password is `hacktheblue`. Stop and wait — don't fabricate evidence or guess at answers without it.
+1. Check whether `Recon Output/Sherlocks/<name>-evidence/` already exists and is populated — if so, the user has already provided it, use it directly.
+2. If not, tell the user plainly what's needed: download the archive manually from `https://app.hackthebox.com/sherlocks/<id>` (logged in, in a browser), then extract it into `Recon Output/Sherlocks/<name>-evidence/`. HTB's standard Sherlock zip password is `hacktheblue`. Stop and wait — don't fabricate evidence or guess at answers without it.
 
 ## Core Responsibilities
 
@@ -63,13 +63,13 @@ Same spirit as this vault's no-public-exploits policy for machines: researching 
 
 ## Output Format
 
-- `Recon Output/<name>-sherlock.md` — scenario summary, evidence archive contents (what artifact files exist), then per task: question, the exact command(s) run against the evidence as fenced code blocks with their real output (not paraphrased — this file doubles as a learning trail for the user, who is following along to learn the methodology, not just reading conclusions), the reasoning connecting that output to the answer, and the answer itself. Update this file incrementally as tasks are solved, not just once at the end.
-- `HTB Writeups/<name>.md` (only when asked, once all tasks are solved) — a polished writeup in this vault's voice (direct, technical, first person, per root `CLAUDE.md`). Structure: header block (name, category: DFIR, difficulty, date), **Skills Required** front matter (prerequisite DFIR knowledge/tools, each with 1-2 real sourced references via WebSearch, same standard as `writeup-agent`), **Skills Learned** (short labels), then **Scenario** and a **task-by-task walkthrough** (not a Recon/Foothold/Privesc/Root structure — that doesn't apply here) explaining the reasoning behind each answer with real evidence blocks pulled verbatim from the notes file, and a **Lessons Learned** section. Same publishing rule as machine writeups: this file is `.gitignore`d by default, only un-ignore it (`!HTB Writeups/<name>.md`) once the Sherlock is confirmed retired.
+- `Recon Output/Sherlocks/<name>-sherlock.md` — scenario summary, evidence archive contents (what artifact files exist), then per task: question, the exact command(s) run against the evidence as fenced code blocks with their real output (not paraphrased — this file doubles as a learning trail for the user, who is following along to learn the methodology, not just reading conclusions), the reasoning connecting that output to the answer, and the answer itself. Update this file incrementally as tasks are solved, not just once at the end.
+- `HTB Writeups/Sherlocks/<name>.md` (only when asked, once all tasks are solved) — a polished writeup in this vault's voice (direct, technical, first person, per root `CLAUDE.md`). Structure: header block (name, category: DFIR, difficulty, date), **Skills Required** front matter (prerequisite DFIR knowledge/tools, each with 1-2 real sourced references via WebSearch, same standard as `writeup-agent`), **Skills Learned** (short labels), then **Scenario** and a **task-by-task walkthrough** (not a Recon/Foothold/Privesc/Root structure — that doesn't apply here) explaining the reasoning behind each answer with real evidence blocks pulled verbatim from the notes file, and a **Lessons Learned** section. Same publishing rule as machine writeups: this file is `.gitignore`d by default, only un-ignore it (`!HTB Writeups/Sherlocks/<name>.md`) once the Sherlock is confirmed retired.
 - If a technique used is genuinely reusable across future Sherlocks (a general log-correlation approach, a memory-forensics pattern, not this-incident-specific trivia), extract it into `Tooling and Scripts/` and append a line to `Tooling and Scripts/Techniques Index.md` under a `## DFIR / Forensics` category (create the category if it doesn't exist yet), linking back with `[[<name>#Lessons Learned|<name>]]` — same convention `writeup-agent` uses for machines.
 
 ## Edge Cases
 
 - Evidence archive missing or empty: stop and ask per "Evidence acquisition" above — don't proceed on assumptions about what it probably contains.
 - A task's answer isn't findable in the provided evidence after real effort: say so plainly in the notes file rather than guessing to fill in a blank — flag exactly what was tried and what's missing.
-- Sherlock is a currently-active (non-retired) release: still fully workable, just don't create/un-ignore an `HTB Writeups/<name>.md` entry until it retires (same rule as machines).
+- Sherlock is a currently-active (non-retired) release: still fully workable, just don't create/un-ignore an `HTB Writeups/Sherlocks/<name>.md` entry until it retires (same rule as machines).
 - `htb_sherlock.py` metadata calls fail (e.g. `HTB_API_TOKEN` unset): surface the error verbatim and stop rather than guessing at scenario/task text from the evidence archive alone.
