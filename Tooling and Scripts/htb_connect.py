@@ -492,6 +492,91 @@ def cmd_submit(args):
     emit({"result": message})
 
 
+def _fetch_paginated_machines(token, endpoint, retired):
+    """Page through one of the two live v4 listing endpoints and return raw
+    machine dicts, tagged with `retired`.
+
+    KNOWN GAP (2026-09-03): pyhackthebox's own `Client.get_machines()` posts
+    to `machine/list` / `machine/list/retired`, which both 404 against the
+    real API now -- same class of staleness as the other v4 workarounds in
+    this file. Live-probed replacements (confirmed working against a real
+    App Token, same session that found these):
+      - active machines:  `machine/paginated` (only ever returns the
+        current ~20-box rotating "active" pool -- its own `retired` query
+        param is accepted but has no effect, always serves the active pool
+        regardless of the value passed).
+      - retired machines: `machine/list/retired/paginated` (529 machines
+        across 6 pages at the API's max `per_page=100`, 500s above that).
+    Both accept `sort_by=release-date`/`sort_type=asc|desc`, but that
+    server-side sort is NOT trustworthy -- one item ("Cap") consistently
+    sorted first regardless of direction, out of chronological order, in
+    live testing. Don't rely on it: fetch every page and sort client-side
+    on the `release` field instead (plain ISO-8601 strings, so a lexical
+    sort is already a chronological sort -- no date parsing needed).
+    """
+    headers = {"Authorization": f"Bearer {token}", "User-Agent": "htb-api/0.5.2"}
+    machines = []
+    page = 1
+    while True:
+        r = requests.get(
+            API_BASE + endpoint,
+            headers=headers,
+            params={"per_page": 100, "page": page},
+            timeout=15,
+        )
+        if r.status_code != 200:
+            fail(f"{endpoint} page {page} returned HTTP {r.status_code}: {r.text[:200]}")
+        data = r.json()
+        items = data.get("data", [])
+        if not items:
+            break
+        for m in items:
+            m["retired"] = retired
+        machines.extend(items)
+        if page >= (data.get("meta", {}) or {}).get("last_page", page):
+            break
+        page += 1
+    return machines
+
+
+def cmd_list_machines(args):
+    token = get_token()
+    machines = []
+    if args.status in ("all", "active"):
+        machines.extend(_fetch_paginated_machines(token, "machine/paginated", retired=False))
+    if args.status in ("all", "retired"):
+        machines.extend(
+            _fetch_paginated_machines(token, "machine/list/retired/paginated", retired=True)
+        )
+
+    if args.owned == "unowned":
+        machines = [m for m in machines if not m.get("authUserInRootOwns")]
+    elif args.owned == "owned":
+        machines = [m for m in machines if m.get("authUserInRootOwns")]
+
+    machines.sort(key=lambda m: m["release"], reverse=not args.asc)
+    if args.limit:
+        machines = machines[: args.limit]
+
+    emit(
+        [
+            {
+                "id": m["id"],
+                "name": m["name"],
+                "os": m.get("os"),
+                "difficulty": m.get("difficultyText"),
+                "points": m.get("points"),
+                "release_date": m["release"],
+                "retired": m["retired"],
+                "user_owned": bool(m.get("authUserInUserOwns")),
+                "root_owned": bool(m.get("authUserInRootOwns")),
+                "free": m.get("free"),
+            }
+            for m in machines
+        ]
+    )
+
+
 # KNOWN GAP (2026-07-19): no working endpoint found yet for a machine's
 # official synopsis/description text (the scenario blurb HTB shows on a
 # machine's info page, distinct from the box's own hosted content). The
@@ -554,6 +639,30 @@ def build_parser():
     p.add_argument("--tcp", action="store_true")
     add_release_flag(p)
     p.set_defaults(func=cmd_vpn_download)
+
+    p = sub.add_parser(
+        "list-machines",
+        help="List machines sorted by release date (newest first by default)",
+    )
+    p.add_argument(
+        "--status",
+        choices=["all", "active", "retired"],
+        default="all",
+        help="Which machine pool to list (default: all)",
+    )
+    p.add_argument(
+        "--owned",
+        choices=["all", "unowned", "owned"],
+        default="all",
+        help="Filter by whether you've already rooted the machine (default: all)",
+    )
+    p.add_argument(
+        "--asc",
+        action="store_true",
+        help="Sort oldest-first instead of the default newest-first",
+    )
+    p.add_argument("--limit", type=int, default=None, help="Cap the number of results after sorting")
+    p.set_defaults(func=cmd_list_machines)
 
     p = sub.add_parser("submit", help="Submit a user/root flag for a machine")
     p.add_argument("target")
