@@ -20,7 +20,15 @@ categories, stop and ask before proceeding.
   - `Machines/` — regular HTB (and OverTheWire) machines. Raw notes +
     terminal output go into `Recon Output/Machines/`, polished writeups come
     out into `HTB Writeups/Machines/`. Writeup format: Recon → Foothold →
-    Privesc → Root → Lessons Learned.
+    Privesc → Root → Lessons Learned. Any machine expected to run past a
+    couple of passes (privesc especially — a stalled `hank`-style
+    intermediate foothold is the common trigger) keeps an **Unresolved
+    Signals** table near the top of its `<target>-foothold.md`, same
+    format/discipline as the Fortress one described below — see Agent
+    Operating Principles.md #12 for why a single-target engagement needs
+    this exactly as much as a multi-flag one (BlockSynergy lost a real,
+    already-captured lead for ten passes by not having one from the
+    start).
   - `Sherlocks/` — DFIR/forensics challenges. Working notes/evidence in
     `Recon Output/Sherlocks/` (`<name>-sherlock.md`, `<name>-evidence/`),
     polished writeups in `HTB Writeups/Sherlocks/` — same retired-only
@@ -121,6 +129,32 @@ categories, stop and ask before proceeding.
   this specific folder.
 
 ## Autonomous agent pipeline
+
+**Source of truth as of 2026-09-16:** `.claude/agents/` and `.claude/skills/` are
+symlinks into `.claude/harness/`, a git submodule checked out from the public
+[`pwnbox-harness`](https://github.com/occamzrazor342/pwnbox-harness) repo — the
+genericized, publishable version of this exact pipeline. Every agent/skill file in
+there uses named placeholders instead of this vault's literal folder names (see that
+repo's own `HARNESS.md` for the full contract); this vault is the placeholders'
+concrete, real-world instance. **To edit an agent or skill, edit the file inside
+`.claude/harness/` and commit/push from there (it's its own git repo)** — editing
+through the symlink works identically, since it's the same file — then run `git
+submodule update --remote .claude/harness` and commit the new submodule pointer in
+this vault's own repo so the pin stays intact. Don't try to keep a second,
+unsynced copy anywhere else.
+
+**The variable mapping every agent resolves against, for this vault specifically:**
+
+| Placeholder | This vault's real value |
+|---|---|
+| `NOTES_ROOT` | `Recon Output/` |
+| `WRITEUPS_ROOT` | `HTB Writeups/` |
+| `TOOLING_ROOT` | `Tooling and Scripts/` |
+| `ORCHESTRATION_ROOT` | `Orchestration/` |
+| `SCOPE_DOC` | this file (`CLAUDE.md`) |
+| `LAB_ENV_ROOT` | `Lab Environment/` |
+| `BOUNTY_ROOT_PATTERN` | `Bug Bounty - <Program Name>/` |
+
 Six subagents live in `.claude/agents/`: `connect-agent`, `recon-agent`,
 `exploit-agent`, `privesc-agent`, `writeup-agent` — one per phase of a
 box. Each reads its predecessor's notes from `Recon Output/Machines/<target>-*.md`
@@ -151,6 +185,21 @@ progress away from the terminal.
 
 Three skills sit on top, forming a goal stack (Goal → Goal Relay →
 Orchestration / Infinite Worker):
+
+A fourth, cross-cutting support skill — **`synthesize-state`**
+(`.claude/skills/synthesize-state/`) — is not part of the goal stack; the
+*orchestrator* invokes it (never a subagent) to reconstruct an
+engagement's verified state from raw evidence, separating evidence-backed
+fact from inherited conclusion into a live Assumption Register +
+Unresolved Signals table pinned to the top of the stage notes. It runs
+after recon, on resuming a cold goal, and **mandatorily before
+re-dispatching any blocked stage** (wired into `pwn-box`'s blocked-stage
+loop). It exists because multi-pass engagements flatten narrow supported
+claims into broad unsupported premises and discard the evidence behind
+them — see the skill body and the `assumption_register_over_flattened_conclusions`
+memory. Its enforcement rule pairs with the "persist raw evidence" rule
+under "How to work" below (the collection-time prevention it can't do on
+its own).
 
 - **`pwn-box`** (`.claude/skills/pwn-box/`) — one **Goal**: runs a single
   target through all five subagents in sequence, fully autonomously, and
@@ -249,6 +298,21 @@ pieces have some track record.
   Watch note from a writeup that used it).
 - Prefer editing/creating files directly in this vault over just printing
   output to chat, unless I ask for a quick answer.
+- **Persist raw evidence, don't just persist conclusions.** When a finding
+  rests on tool output (a data dump, a leaked field, an error message, a
+  captured response), write the actual evidence into the durable
+  `Recon Output/` notes — not only your conclusion about it. Do **not**
+  redact or "…"-truncate a load-bearing field to shorten a note (an
+  attestation cert on an attestation box, a token, a hash, a credential-ish
+  blob): the field you trim is often the one a later pass needs, and once
+  it's gone the conclusion built on it can no longer be checked. If a dump
+  is too large to inline in full, save it to a durable vault file (not
+  `/tmp`, which is ephemeral — same graduation rule as scripts below) and
+  link it. A conclusion whose evidence lives only in `/tmp`, only in prose,
+  or redacted is treated as **unverified** by the `synthesize-state`
+  checkpoint and will be sent back for re-collection — so capture it right
+  the first time. See `.claude/skills/synthesize-state/` for how flattened
+  conclusions and discarded evidence get caught on resume.
 - A background job's `$CLAUDE_JOB_DIR/tmp` is ephemeral — cleaned up when
   the job is deleted. Any script written there that's reusable beyond the
   immediate task (a payload generator, an exploit helper, anything worth

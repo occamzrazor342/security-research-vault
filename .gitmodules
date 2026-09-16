@@ -1,0 +1,3 @@
+[submodule ".claude/harness"]
+	path = .claude/harness
+	url = https://github.com/occamzrazor342/pwnbox-harness.git
