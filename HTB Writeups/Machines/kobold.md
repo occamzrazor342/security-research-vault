@@ -6,6 +6,25 @@
 Arcane v1.13.0 (Go, Docker management platform, runs as root on the host),
 Docker as the underlying container runtime tying the last two together
 
+## Skills Required
+
+- **Model Context Protocol (MCP) architecture** — what an MCP server config
+  is and why letting a caller control the command a server spawns is
+  dangerous by design, not just a coding bug. [MCP Specification (Model
+  Context Protocol)](https://modelcontextprotocol.io/specification/2026-07-28)
+- **Path traversal / local file inclusion via a client-controlled
+  parameter** (here, a cookie value used to select a template file) —
+  [Path Traversal (OWASP Foundation)](https://owasp.org/www-community/attacks/Path_Traversal)
+- **Docker privileged containers and bind mounts as a root-equivalence
+  primitive** — why admin on any platform that can create a privileged,
+  arbitrarily-bind-mounted container is root on the host by design —
+  [`docker container run` — Runtime privilege and Linux capabilities
+  (Docker Docs)](https://docs.docker.com/reference/cli/docker/container/run/)
+- **Reading a CVE's real patch diff against pinned source, not just an
+  advisory summary** — [GHSA-2jv8-39rp-cqqr: Arcane unauthenticated proxy
+  access to remote environments (GitHub Advisory
+  Database)](https://github.com/getarcaneapp/arcane/security/advisories/GHSA-2jv8-39rp-cqqr)
+
 ## Recon
 
 `nmap` showed a small surface: 22 (SSH), 80/443 (nginx, TLS wildcard cert
@@ -55,9 +74,22 @@ Version-matching against known CVEs gave three live leads plus one dead one:
 Ranked vector 1 (MCPJam RCE) as the highest-confidence, lowest-effort
 foothold and went there first.
 
+**Working theory heading into Foothold:** three plausible CVEs across three
+different apps, but they're not equally cheap to prove. MCPJam's
+unauthenticated `/api/mcp/connect` needs no preconditions at all; PrivateBin's
+LFI depends on an unconfirmed config flag; Arcane's environment-proxy bug
+needs a second registered environment that doesn't obviously exist yet. Start
+with the cheapest one to test. And regardless of which CVE actually lands
+first, `arcane.service` running as root is the real prize sitting in plain
+sight — a Docker-management platform running as root makes admin-on-Arcane
+the likely actual privesc target, independent of whether any of its own
+CVEs turn out to be the way there.
+
 ## Foothold
 
-[[CVE-2026-23744]] delivered exactly as advertised. MCPJam Inspector's
+This confirmed the working theory from Recon — the unauthenticated path
+needing zero preconditions was in fact the fastest win. [[CVE-2026-23744]]
+delivered exactly as advertised. MCPJam Inspector's
 `POST /api/mcp/connect` takes a `serverConfig` object and spawns
 `serverConfig.command`/`args` as a real child process with no
 authentication and no input validation:
@@ -104,8 +136,9 @@ Two things worth flagging from the box's systemd units, read via
   `WorkingDirectory=/root`, with an `ENCRYPTION_KEY` env var set.
 - A second Linux user, `alice` (uid 1002), also in `operator`.
 
-Both looked like strong privesc leads walking in. Neither was the actual
-path — see below.
+Both fit the Recon-stage theory that Arcane admin was the real objective,
+and both looked like strong privesc leads walking in — neither turned out
+to be the actual mechanism for getting there (see Rabbit Holes below).
 
 ## Privesc
 
@@ -117,74 +150,7 @@ three services (`mcp-jam.service` as `ben`, `arcane.service` as root,
 `docker.service`) plus an unexplained root-owned loopback listener on
 `127.0.0.1:37581` that never turned out to matter.
 
-### Dead end #1: the Arcane `ENCRYPTION_KEY`
-
-The key sitting in `arcane.service`'s environment
-(`Q3PbC9fpq/tPZ2waXI9+grmc8ualF7ITF5izX5rsk+E=`) looked like the obvious
-lead. Checked what it actually protects before assuming it was useful:
-Arcane uses two separate secrets — `ENCRYPTION_KEY` encrypts *at-rest*
-secrets in its own DB (registry creds, git tokens, OIDC secrets), while a
-**separate** `JWT_SECRET` env var signs session JWTs. Only
-`ENCRYPTION_KEY` was set in the unit file; no `JWT_SECRET` or Arcane `.env`
-was found readable anywhere on disk (`/root` itself was `Permission
-denied` for `ben`, not just its contents). So this key alone can't forge
-an admin session, and it doesn't decrypt anything reachable without
-privesc already in hand. Ruled out standalone — it became moot once admin
-access was obtained a different way (below).
-
-### Dead end #2 (confirmed real, but unreachable): [[CVE-2026-23944]]
-
-Pulled the actual fix commit
-([`2008e1b`](https://github.com/getarcaneapp/arcane/commit/2008e1b93b25d0c4c3fff3af07843766231614eb))
-to understand the real bug rather than just cite the advisory: pre-1.13.2,
-`environment_middleware.go`'s proxy path resolved the target environment
-and — if it was a registered remote/agent-paired environment — forwarded
-the request with the manager's own stored agent token attached *before*
-checking whether the caller was authenticated at all. The fix adds an
-`authValidator` check that now runs first and returns 401 before any
-environment lookup happens.
-
-On-target behavior still matched the vulnerable pattern exactly: hitting
-`/api/environments/<any-id>/containers` for a non-existent id returns a
-pre-auth `{"error":"Environment not found"}` with zero auth required —
-the buggy ordering genuinely is still present in this build. But once
-Arcane admin access was obtained (below), `GET /api/environments` showed
-this instance has exactly **one** environment, `id "0"`, "Local Docker" —
-no remote/agent environment registered to proxy through. `GET
-/api/environments/0/containers` unauthenticated returns a proper `401`,
-confirming the local environment doesn't even hit the vulnerable code
-path. The vulnerability is real and reachable; there's just nothing behind
-it to abuse on this specific instance. Confirmed dead, not just
-unconfirmed.
-
-While re-checking Arcane's CVEs at this stage, also caught a recon mistake:
-`CVE-2026-40242` (unauthenticated SSRF via `/api/templates/fetch`) had been
-wrongly marked 404 during recon. Retested with the correct path and got a
-live `422` demanding a `url` parameter — the endpoint is present and
-unauthenticated. It only fetches `http`/`https` (`file://` is explicitly
-rejected) and only reflects errors, not response bodies, on non-JSON
-targets — but that's still enough for unauthenticated internal port
-scanning. Used it to confirm reachability of loopback services (8080/
-PrivateBin, 6274/MCPJam-internal, 3552/Arcane itself, and the mystery
-37581 listener). It wasn't what delivered root here, but it's a live,
-useful SSRF primitive on this instance worth remembering for a future box
-where it's the only way in.
-
-### Dead end #3: `alice` and the `docker` group
-
-`alice` (uid 1002) is in `operator` **and** `docker`
-(`groups=1002(alice),37(operator),111(docker)`) — direct socket access if
-her account were reachable. `/home/alice` wasn't browsable by `ben`
-(permission denied on the directory itself), and no SSH key, sudo path, or
-other direct credential existed for her. Once a DB credential leaked later
-in the chain (below), tried it against her actual Linux login both via
-`su alice` and directly over SSH — both failed with "Authentication
-failure." Ruled out as a direct path. Root was eventually reached by a
-different route that lands on the same practical outcome (Docker-mediated
-root) her group membership would have given, without ever touching her
-account. Most likely an alternate/red-herring path the box intended.
-
-### The path that actually worked: `operator` → world-writable PrivateBin data → LFI → leaked DB cred → Arcane admin
+### `operator` → world-writable PrivateBin data → LFI → leaked DB cred → Arcane admin
 
 `ben`'s `operator` group membership matters because `/privatebin-data`
 (PrivateBin's bind-mounted data volume) is group-owned by `operator` —
@@ -245,7 +211,12 @@ curl -sk -X POST http://10.129.245.50:3552/api/auth/login \
 ```
 
 Returned a valid JWT with `"roles":["admin"]` — full admin over Arcane, the
-app that runs as root on the host and controls the Docker daemon.
+app that runs as root on the host and controls the Docker daemon. This is
+where the working theory from Recon paid off on its second half: Arcane
+admin, not any of its own CVEs, was the real route to root — reached via a
+completely unplanned mechanism (a leaked legacy DB credential from an
+unrelated app), not any of the three CVE candidates identified at recon
+time.
 
 ## Root
 
@@ -306,6 +277,105 @@ Cleaned up afterward: deleted all throwaway containers via Arcane's
 planted webshell (`/privatebin-data/data/pwn.php`) and the output files
 under `/tmp`, and confirmed via the container list that only the
 legitimate PrivateBin container remained running.
+
+## Rabbit Holes
+
+Two of these fit the Recon-stage theory that Arcane admin was the real
+objective and looked like strong privesc leads walking in; neither turned
+out to be the actual mechanism. The third was a plausible alternate path
+that never got confirmed reachable.
+
+### The Arcane `ENCRYPTION_KEY`
+
+The key sitting in `arcane.service`'s environment
+(`Q3PbC9fpq/tPZ2waXI9+grmc8ualF7ITF5izX5rsk+E=`) looked like the obvious
+lead. Checked what it actually protects before assuming it was useful:
+Arcane uses two separate secrets — `ENCRYPTION_KEY` encrypts *at-rest*
+secrets in its own DB (registry creds, git tokens, OIDC secrets), while a
+**separate** `JWT_SECRET` env var signs session JWTs. Only
+`ENCRYPTION_KEY` was set in the unit file; no `JWT_SECRET` or Arcane `.env`
+was found readable anywhere on disk (`/root` itself was `Permission
+denied` for `ben`, not just its contents). So this key alone can't forge
+an admin session, and it doesn't decrypt anything reachable without
+privesc already in hand. Ruled out standalone — it became moot once admin
+access was obtained a different way (above).
+
+### Confirmed real, but unreachable: [[CVE-2026-23944]]
+
+Pulled the actual fix commit
+([`2008e1b`](https://github.com/getarcaneapp/arcane/commit/2008e1b93b25d0c4c3fff3af07843766231614eb))
+to understand the real bug rather than just cite the advisory: pre-1.13.2,
+`environment_middleware.go`'s proxy path resolved the target environment
+and — if it was a registered remote/agent-paired environment — forwarded
+the request with the manager's own stored agent token attached *before*
+checking whether the caller was authenticated at all. The fix adds an
+`authValidator` check that now runs first and returns 401 before any
+environment lookup happens.
+
+On-target behavior still matched the vulnerable pattern exactly: hitting
+`/api/environments/<any-id>/containers` for a non-existent id returns a
+pre-auth `{"error":"Environment not found"}` with zero auth required —
+the buggy ordering genuinely is still present in this build. But once
+Arcane admin access was obtained (above), `GET /api/environments` showed
+this instance has exactly **one** environment, `id "0"`, "Local Docker" —
+no remote/agent environment registered to proxy through. `GET
+/api/environments/0/containers` unauthenticated returns a proper `401`,
+confirming the local environment doesn't even hit the vulnerable code
+path. The vulnerability is real and reachable; there's just nothing behind
+it to abuse on this specific instance. Confirmed dead, not just
+unconfirmed.
+
+While re-checking Arcane's CVEs at this stage, also caught a recon mistake
+worth naming as a near-miss rather than a clean dead end: `CVE-2026-40242`
+(unauthenticated SSRF via `/api/templates/fetch`) had been wrongly marked
+404 during recon. This overturned the Recon-stage conclusion that the
+endpoint didn't exist — it was a routing/path mistake during initial
+testing, not a real absence. Retested with the correct path and got a live
+`422` demanding a `url` parameter — the endpoint is present and
+unauthenticated. It only fetches `http`/`https` (`file://` is explicitly
+rejected) and only reflects errors, not response bodies, on non-JSON
+targets — but that's still enough for unauthenticated internal port
+scanning. Used it to confirm reachability of loopback services (8080/
+PrivateBin, 6274/MCPJam-internal, 3552/Arcane itself, and the mystery
+37581 listener). It wasn't what delivered root here, but it's a live,
+useful SSRF primitive on this instance worth remembering for a future box
+where it's the only way in.
+
+### `alice` and the `docker` group
+
+`alice` (uid 1002) is in `operator` **and** `docker`
+(`groups=1002(alice),37(operator),111(docker)`) — direct socket access if
+her account were reachable. `/home/alice` wasn't browsable by `ben`
+(permission denied on the directory itself), and no SSH key, sudo path, or
+other direct credential existed for her. Once the legacy DB credential
+leaked (above), tried it against her actual Linux login both via `su
+alice` and directly over SSH — both failed with "Authentication failure."
+Ruled out as a direct path. Root was eventually reached by a different
+route that lands on the same practical outcome (Docker-mediated root) her
+group membership would have given, without ever touching her account.
+Most likely an alternate/red-herring path the box intended.
+
+## Skills Learned
+
+- Exploiting an MCP server's unauthenticated `serverConfig.command`
+  execution to spawn an arbitrary process ([[CVE-2026-23744]])
+- PrivateBin template-cookie path traversal ([[CVE-2025-64714]]) used as a
+  cross-container read primitive, not just a same-host LFI
+- Distinguishing "vulnerable code path present" from "actually exploitable
+  in this deployment" via real patch-diff analysis, not just an advisory
+  summary ([[CVE-2026-23944]])
+- Recovering a live, un-rotated credential from a disabled
+  (semicolon-commented) legacy config block
+- Testing a recovered credential across every distinct login surface on a
+  box, including ones on a completely unrelated tech stack
+- Recognizing admin on a Docker-management platform as root-equivalent by
+  design, not a bug to go hunting for
+- Overriding a Docker image's default non-root user and baked-in
+  entrypoint through a container-create API to get real root execution
+- Using an unauthenticated SSRF primitive for internal service/port
+  reachability mapping
+- Re-testing a recon-stage "not present" conclusion once more context is
+  available, rather than treating it as permanently closed
 
 ## Lessons Learned
 

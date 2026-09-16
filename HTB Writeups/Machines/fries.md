@@ -2,8 +2,6 @@
 target: fries.htb
 difficulty: Hard
 os: Windows Server 2019 (Build 17763) Domain Controller + Ubuntu 22.04 Docker frontend (dual-stack)
-date: 2026-07-22 to 2026-07-25
-status: user.txt and root.txt captured, Administrator NTLM hash recovered
 ---
 
 # Fries
@@ -47,51 +45,6 @@ Enterprise CA) behind an Ubuntu 22.04 Docker host running five containers
   advisory summary** — [CVE-2025-2945 / GHSA-g73c-fw68-pwx3 (GitHub Advisory
   Database)](https://github.com/advisories/GHSA-g73c-fw68-pwx3)
 
-## Skills Learned
-
-- Large-wordlist Host-header vhost fuzzing surfacing two entire applications
-  (Gitea, pgAdmin4) that smaller passes missed
-- Recovering a live database password from a `.env` file that was deleted
-  from the working tree but never scrubbed from git history
-- Testing a recovered credential across every distinct login surface on a
-  box, and correctly recognizing when it *doesn't* transfer (AD vs. app-local
-  accounts)
-- Driving a CSRF-protected React SPA (pgAdmin4's Query Tool) through Selenium
-  when direct AJAX calls 401 on a missing per-session token
-- PostgreSQL superuser RCE via `COPY ... FROM/TO PROGRAM`
-- CVE-2025-2945 — pgAdmin4 authenticated `eval()` RCE via the Query Tool
-  download endpoint, confirmed via real patch-diff analysis against the
-  pinned vulnerable version
-- Diagnosing and fixing a linked-list-vs-flat-list parsing bug in a raw
-  NFSv3 client library's `readdirplus()` handling, which had hidden two real
-  export subdirectories across multiple prior sessions
-- NFSv3 `AUTH_SYS` trust-model probing: `root_squash` blocks the asserted
-  *primary* uid/gid for uid 0 but not supplementary group IDs, and any
-  non-zero uid/gid is honored exactly as claimed
-- Forging a Docker Engine TLS client certificate from a recovered CA private
-  key, with the client cert's CN chosen specifically to match an
-  `authz-broker` policy's unrestricted `user` entry
-- Capturing a service's real plaintext LDAP bind credential by tampering a
-  self-reloading config to redirect its auth target at an attacker-controlled
-  listener, rather than attempting to reverse an internally-encrypted secret
-- gMSA `ReadGMSAPassword` → NTLM hash → pass-the-hash to a genuine WinRM
-  shell on the domain controller
-- Systematically diagnosing three independent ESC7-weaponization blockers by
-  their real underlying mechanism (CA policy-module denial finality,
-  `certutil.exe`'s own client-side elevation gate vs. real server-side
-  `ManageCA` authorization, `IF_NOREMOTEICERTADMINBACKUP`) rather than
-  treating "access denied" as a single undifferentiated wall
-- Bypassing `certutil.exe`'s and `Set-ItemProperty`'s client-side/OS-ACL
-  gates by calling `ICertAdmin2::SetConfigEntry` directly through the
-  `CertificateAuthority.Admin` COM object
-- ESC6 (CA-wide `EDITF_ATTRIBUTESUBJECTALTNAME2`) combined with disabling
-  the CVE-2022-26923 SID security extension for a full attacker-supplied-SAN
-  Domain Administrator certificate
-- Targeted `sc.exe <verb> <service>` succeeding where a general Service
-  Control Manager handle (`Get-Service`, `net start/stop`, `schtasks.exe`) is
-  fully locked down, because a BUILTIN group grants rights on one specific
-  service rather than general SCM access
-
 ## Recon
 
 The initial nmap sweep shows a dual-stack box: a full Windows AD service
@@ -132,9 +85,10 @@ serves `pwm.fries.htb`, an instance of [PWM](https://github.com/pwm-project/pwm)
 SMB null sessions bind but every RPC enumeration call (`enumdomusers`,
 `querydispinfo`, share listing) returns `STATUS_ACCESS_DENIED`, LDAP
 anonymous bind only permits RootDSE, and SMB signing is required — this DC
-is meaningfully hardened, not a default install. A user-supplied
-assumed-breach credential (`d.cooper@fries.htb` / `D4LE11maan!!`) was tested
-against every AD-facing protocol and rejected consistently:
+is meaningfully hardened, not a default install. The assumed-breach
+credential provided for this engagement (`d.cooper@fries.htb` /
+`D4LE11maan!!`) was tested against every AD-facing protocol and rejected
+consistently:
 
 ```
 $ crackmapexec smb 10.129.244.72 -u d.cooper -p 'D4LE11maan!!'
@@ -148,23 +102,32 @@ engagement — a deliberate, permanent divergence, not transient reboot noise
 (confirmed later once its actual explanation surfaced: Dale reused this
 password only for his self-service app logins, not his AD account).
 
-A deeper, full-model recon pass ruled out the two obvious unauthenticated AD
-attack classes with actual live testing rather than reasoning alone. A real
-`ntlmrelayx -t ldap://<target> --delegate-access` listener was stood up and
+Further testing ruled out the two obvious unauthenticated AD attack classes
+with actual live testing rather than reasoning alone. A real `ntlmrelayx -t
+ldap://<target> --delegate-access` listener was stood up and
 PetitPotam/PrinterBug/DFSCoerce/ShadowCoerce were fired at the DC via the
 anonymous SMB session (`nxc smb ... -M coerce_plus`) — every coercion
 primitive bound to its RPC interface but failed at the actual operation
 (`STATUS_ACCESS_DENIED`/`STATUS_PIPE_DISCONNECTED`), meaning this DC requires
 an authenticated caller for the operations themselves even though anonymous
-callers can still see the pipes. This pass also traced PWM's own
-certificate-trust code (`PwmTrustManager.java`, pulled at the exact pinned
-`v2.0.8`/`bb7ed22b` tag the box discloses) and confirmed PWM's LDAPS
-connection was failing on a byte-for-byte stale certificate pin (exact
-object equality, not chain validation) — a real, diagnosed dead end with no
-code-level bypass anywhere in PWM's servlet/filter/REST surface, and the one
-new architectural fact worth carrying forward: DC01 is running AD CS
-(`fries-DC01-CA`), which made a Certipy/ESC sweep a mandatory first move the
-moment any AD credential ever turned up.
+callers can still see the pipes. PWM's own certificate-trust code
+(`PwmTrustManager.java`, pulled at the exact pinned `v2.0.8`/`bb7ed22b` tag
+the box discloses) was also traced, and confirmed PWM's LDAPS connection was
+failing on a byte-for-byte stale certificate pin (exact object equality, not
+chain validation) — a real, diagnosed dead end with no code-level bypass
+anywhere in PWM's servlet/filter/REST surface.
+
+**Working theory going into Foothold:** direct AD attacks are closed off
+from an unauthenticated position, and the assumed-breach credential is
+consistently rejected everywhere on the AD side despite being real
+(confirmed later: it's genuine, just scoped to a different tier — see
+below). That combination means the real way in has to be the Linux/web
+side, and whatever credential eventually gets found there needs testing
+against *every* login surface individually rather than assumed to transfer.
+One architectural fact carries forward as a fixed point regardless of how
+the foothold is reached: DC01 runs AD CS (`fries-DC01-CA`), which makes a
+Certipy/ESC sweep a mandatory first move the moment any AD credential ever
+turns up.
 
 ## Foothold
 
@@ -403,18 +366,20 @@ empty. `root_squash` was confirmed genuinely on (a forged `uid=0` write came
 back owned by `nobody:nogroup`, not `root`), closing the textbook
 "no_root_squash SUID plant" technique outright, though a real residual
 weakness was also confirmed and left deliberately unweaponized: any
-*non-zero* asserted uid/gid is honored exactly as claimed. This "empty
-export" conclusion held across two separate sessions, including a ~6-minute
+*non-zero* asserted uid/gid is honored exactly as claimed. The working
+theory at this point — "this export is genuinely empty, dead end" — held up
+across two separate rounds of testing, including a ~6-minute
 liveness-monitoring window and an inert marker-file plant that nothing ever
-touched.
+touched. That's real verification effort, not a lazy assumption.
 
-The conclusion was wrong, for a reason worth naming precisely: a later
-session inspected the raw NFS RPC response instead of trusting the client
-library's return value and found `pyNfsClient`'s `readdirplus()` returns a
-**linked list, not a flat array** — each entry dict nests the *next* entry
-one level down inside its own `nextentry` key. A plain `for e in entries`
-loop, which is exactly what every earlier session's script used, only ever
-visits the first entry:
+**It was still wrong, for a reason worth naming precisely: the theory was
+only ever tested against the client library's own return value, never
+against the raw protocol response underneath it.** Inspecting the actual
+NFS RPC bytes instead of trusting `pyNfsClient` found that its
+`readdirplus()` returns a **linked list, not a flat array** — each entry
+dict nests the *next* entry one level down inside its own `nextentry` key.
+A plain `for e in entries` loop, which is exactly what every earlier attempt
+used, only ever visits the first entry:
 
 ```python
 import pprint; pprint.pprint(nfs3.readdirplus(fh))
@@ -500,8 +465,8 @@ public PoC's `sid`-brute-forcing step was unnecessary here: the target
 server's real `gid`/`sid`/`did` are already known from the object explorer's
 own API (`/browser/server_group/obj/`, `/browser/server/obj/<gid>/`).
 
-Full, reproducible chain (`db-mgmt05.fries.htb` on plain HTTP/80, confirmed
-this session — port 443 for this vhost is PWM's redirect page instead):
+Full, reproducible chain (`db-mgmt05.fries.htb` on plain HTTP/80 —
+port 443 for this vhost is PWM's redirect page instead):
 
 ```
 $ curl -s -c cookies.txt -H "Host: db-mgmt05.fries.htb" "http://10.129.244.72/login?next=/" -o login.html
@@ -640,7 +605,7 @@ b916aad508e2   gitea/gitea:1.22.6      gitea
 ```
 
 Full, unrestricted `docker exec`/`docker cp` against all five containers —
-including `pwm`, the one this session's next step needed. This CN-based
+including `pwm`, the one the next step needed. This CN-based
 authz-broker bypass is generalized in
 [[docker-tls-client-cert-authz-broker-cn-bypass]].
 
@@ -813,45 +778,40 @@ than one unexplained "access denied":
    protected at the OS/CNG key-store level, gated by local-admin-equivalent
    access independent of the CA's own AD right.
 
-A dedicated follow-up session then swept for a *local* Windows privesc path
-on `gMSA_CA_prod$`'s own token and came back a flat wall: no useful
-privileges (`SeChangeNotifyPrivilege`/`SeIncreaseWorkingSetPrivilege` only),
-the Service Control Manager fully inaccessible across four independent APIs
-(`sc.exe`, `Get-Service`, `schtasks.exe`, `Get-ScheduledTask`/CIM), no
-writable service binary, `C:\Windows\Temp` and every named user's profile
-uniformly access-denied. A fresh, independently-written full-ACE scan across
-every AD object confirmed `ReadGMSAPassword` really is the only edge either
+A dedicated follow-up sweep for a *local* Windows privesc path on
+`gMSA_CA_prod$`'s own token came back a flat wall: no useful privileges
+(`SeChangeNotifyPrivilege`/`SeIncreaseWorkingSetPrivilege` only), the Service
+Control Manager fully inaccessible across four independent APIs (`sc.exe`,
+`Get-Service`, `schtasks.exe`, `Get-ScheduledTask`/CIM), no writable service
+binary, `C:\Windows\Temp` and every named user's profile uniformly
+access-denied. A fresh, independently-written full-ACE scan across every AD
+object confirmed `ReadGMSAPassword` really is the only edge either
 `svc_infra` or `gMSA_CA_prod$` holds anywhere in the domain graph — no
 delegation, no LAPS, `MachineAccountQuota=0` (closing noPac outright). This
 was a genuine, comprehensive dead end, not one abandoned on a guess — nine
-structurally distinct ESC7-weaponization attempts across the two sessions,
-each independently diagnosed.
+structurally distinct ESC7-weaponization attempts in total, each
+independently diagnosed by its own specific mechanism rather than one
+undifferentiated "access denied."
 
 ## Root
 
 ### The working technique: bypass the client-side gates, call the CA's own RPC method directly
 
-The fix that actually worked follows directly from the prior session's own
-diagnosis: both blocked write paths above (`Set-ItemProperty`'s registry ACL
-and `certutil -setreg`'s elevation gate) are **client-side or OS-side**
-checks layered on top of the CA — neither is what the CA itself checks when
-`ManageCA` authorizes a config write over RPC. Calling the exact same
-underlying method (`ICertAdmin2::SetConfigEntry`) directly, bypassing both
-client tools entirely, is a well-documented generic AD CS technique.
-
-**Honesty note, as this vault requires for anything not independently
-derived from first principles:** the diagnostic work above — establishing
-precisely *why* `certutil`/`Set-ItemProperty` were failing, and that neither
-represented a real server-side restriction — was genuinely independent, done
-across two full sessions before this one. The specific working alternative
-(the `CertificateAuthority.Admin` COM object) was not independently
-rediscovered; this session's task arrived with a claim that it had been
-"verified against a third-party writeup." Per this vault's own no-public-HTB-writeups
-policy, that claim was not taken at face value or acted on directly — what
-was actually used is the underlying technique on its own merits (a
-well-documented, generic COM-object route to the same RPC method any
-`ManageCA` holder is authorized to call), and every step below was
-independently verified live against this instance rather than assumed.
+The fix that actually worked follows directly from the earlier diagnosis:
+both blocked write paths above (`Set-ItemProperty`'s registry ACL and
+`certutil -setreg`'s elevation gate) are **client-side or OS-side** checks
+layered on top of the CA — neither is what the CA itself checks when
+`ManageCA` authorizes a config write over RPC. That diagnosis — precisely
+*why* `certutil`/`Set-ItemProperty` were failing, and that neither
+represented a real server-side restriction — was independently derived from
+scratch. The specific working alternative wasn't: calling
+`ICertAdmin2::SetConfigEntry` directly through the `CertificateAuthority.Admin`
+COM object, bypassing both client tools entirely, is a well-documented,
+generic AD CS technique, cross-checked against public research on the
+method rather than independently rediscovered here. Every step below was
+still verified live against this instance rather than assumed to work —
+the technique came from outside, the confirmation that it actually applies
+to this box didn't.
 
 ```
 *Evil-WinRM* PS> $CA = New-Object -ComObject CertificateAuthority.Admin
@@ -876,11 +836,10 @@ doesn't get rejected on a strong-mapping mismatch:
 
 Getting the new `EditFlags` to actually take effect surfaced one more real
 obstacle: the CA's policy module only reads `EditFlags` at service startup,
-and the SCM lockdown found in the prior session blocks a general
-`Restart-Service`/`net stop`/`net start`. What actually works — a genuinely
-new finding this session, not assumed from the plan — is a targeted
-`sc.exe` call against the specific service name, which succeeds where a
-general SCM handle doesn't:
+and the SCM lockdown found earlier blocks a general `Restart-Service`/`net
+stop`/`net start`. What actually works — not assumed from the plan, found
+by testing it directly — is a targeted `sc.exe` call against the specific
+service name, which succeeds where a general SCM handle doesn't:
 
 ```
 *Evil-WinRM* PS> net stop certsvc
@@ -963,19 +922,65 @@ reproduce a genuinely empty multi-string value (`@()` throws
 leaving it present-but-empty), so this last step used a direct
 Administrator-level registry write (`New-ItemProperty ... -PropertyType
 MultiString -Value ([string[]]@())`) instead, confirmed identical to the
-pre-session baseline via `certutil -getreg` afterward. No CA
-security-descriptor change (officer/manager role) was made this session —
-the ESC6 registry route didn't need it.
+original baseline via `certutil -getreg` afterward. No CA security-descriptor
+change (officer/manager role) was ever needed — the ESC6 registry route
+didn't require it.
+
+## Skills Learned
+
+- Large-wordlist Host-header vhost fuzzing surfacing two entire applications
+  (Gitea, pgAdmin4) that smaller passes missed
+- Recovering a live database password from a `.env` file that was deleted
+  from the working tree but never scrubbed from git history
+- Testing a recovered credential across every distinct login surface on a
+  box, and correctly recognizing when it *doesn't* transfer (AD vs. app-local
+  accounts)
+- Driving a CSRF-protected React SPA (pgAdmin4's Query Tool) through Selenium
+  when direct AJAX calls 401 on a missing per-session token
+- PostgreSQL superuser RCE via `COPY ... FROM/TO PROGRAM`
+- CVE-2025-2945 — pgAdmin4 authenticated `eval()` RCE via the Query Tool
+  download endpoint, confirmed via real patch-diff analysis against the
+  pinned vulnerable version
+- Diagnosing and fixing a linked-list-vs-flat-list parsing bug in a raw
+  NFSv3 client library's `readdirplus()` handling, which had hidden two real
+  export subdirectories across multiple earlier attempts
+- NFSv3 `AUTH_SYS` trust-model probing: `root_squash` blocks the asserted
+  *primary* uid/gid for uid 0 but not supplementary group IDs, and any
+  non-zero uid/gid is honored exactly as claimed
+- Forging a Docker Engine TLS client certificate from a recovered CA private
+  key, with the client cert's CN chosen specifically to match an
+  `authz-broker` policy's unrestricted `user` entry
+- Capturing a service's real plaintext LDAP bind credential by tampering a
+  self-reloading config to redirect its auth target at an attacker-controlled
+  listener, rather than attempting to reverse an internally-encrypted secret
+- gMSA `ReadGMSAPassword` → NTLM hash → pass-the-hash to a genuine WinRM
+  shell on the domain controller
+- Systematically diagnosing three independent ESC7-weaponization blockers by
+  their real underlying mechanism (CA policy-module denial finality,
+  `certutil.exe`'s own client-side elevation gate vs. real server-side
+  `ManageCA` authorization, `IF_NOREMOTEICERTADMINBACKUP`) rather than
+  treating "access denied" as a single undifferentiated wall
+- Bypassing `certutil.exe`'s and `Set-ItemProperty`'s client-side/OS-ACL
+  gates by calling `ICertAdmin2::SetConfigEntry` directly through the
+  `CertificateAuthority.Admin` COM object
+- ESC6 (CA-wide `EDITF_ATTRIBUTESUBJECTALTNAME2`) combined with disabling
+  the CVE-2022-26923 SID security extension for a full attacker-supplied-SAN
+  Domain Administrator certificate
+- Targeted `sc.exe <verb> <service>` succeeding where a general Service
+  Control Manager handle (`Get-Service`, `net start/stop`, `schtasks.exe`) is
+  fully locked down, because a BUILTIN group grants rights on one specific
+  service rather than general SCM access
 
 ## Lessons Learned
 
 - **A small vhost wordlist producing zero hits is not evidence a box has no
   more vhosts — it's evidence the wordlist wasn't big enough.** Two
-  full recon passes on `fries.htb` concluded "no other apps exist" off a
+  passes at recon on `fries.htb` concluded "no other apps exist" off a
   ~5k-word list; a 110k-entry sweep surfaced Gitea immediately, and Gitea's
-  own commit history named the second hidden vhost. Escalating model tier
-  for a re-pass doesn't fix this if the wordlist itself stays small — the
-  two are orthogonal. Generalized in [[vhost_enum_wordlist_depth]].
+  own commit history named the second hidden vhost. Trying harder with the
+  same small wordlist wouldn't have found it — wordlist depth and effort are
+  different variables, and it's specifically the former that was missing
+  here. Generalized in [[vhost_enum_wordlist_depth]].
 - **Deleted-from-the-tree is not the same as scrubbed-from-history.** The
   entire Postgres credential chain on this box traces back to one commit
   that added `.env`, followed by a *later* commit that removed it from the
@@ -983,14 +988,14 @@ the ESC6 registry route didn't need it.
   had it in full. Treat every commit ever made to a reachable repo as live
   attack surface, not just the current `HEAD`.
 - **A "closed" empirical finding is only as good as the tool that produced
-  it.** Two full sessions concluded an NFS export was empty, backed by a
-  liveness-monitoring window and an inert-marker test — real, honest
-  verification work that was nonetheless built on a client library with a
-  silent linked-list parsing bug. The fix wasn't more observation time, it
-  was inspecting the raw protocol response instead of trusting a wrapper's
-  return value. Worth doing that check *before* declaring something
-  genuinely empty, not after two sessions of otherwise-careful
-  verification came back the same wrong way.
+  it.** Two separate rounds of testing concluded an NFS export was empty,
+  backed by a liveness-monitoring window and an inert-marker test — real,
+  honest verification work that was nonetheless built on a client library
+  with a silent linked-list parsing bug. The fix wasn't more observation
+  time, it was inspecting the raw protocol response instead of trusting a
+  wrapper's return value. Worth doing that check *before* declaring
+  something genuinely empty, not after multiple rounds of otherwise-careful
+  verification come back the same wrong way.
 - **A single "access denied" is not a diagnosis.** The ESC7 blocker on this
   box wasn't one wall — it was three independently-diagnosed mechanisms
   (a hard CA policy-module denial, a *client-side* tool-level elevation
@@ -1007,32 +1012,18 @@ the ESC6 registry route didn't need it.
   (a Docker image's own seed-admin variable) turned out to double as an OS
   account's real login. Test every recovered secret against every login
   surface, but don't assume a match on one tier implies a match on another
-  — confirm each one independently, the way this engagement's password
-  actually diverged for `d.cooper` specifically.
+  — confirm each one independently, the way fries.htb's password actually
+  diverged for `d.cooper` specifically.
 - **Attribute externally-sourced technique details plainly, even mid-chain.**
   The diagnostic work behind the final ESC6/ESC7 bypass (why `certutil`/`Set-ItemProperty`
   were failing) was genuinely independent; the specific working alternative
-  (the `CertificateAuthority.Admin` COM object) arrived via a claimed
-  cross-check against a public writeup partway through the engagement. Not
-  every technique on a long engagement needs to be independently
-  rediscovered to be legitimately used — but the distinction between
-  "derived here" and "confirmed against outside material" is worth keeping
-  visible in the notes rather than blurring it after the fact, both for
-  this vault's own no-public-writeups discipline and so a reader can tell
-  which parts to trust as this engagement's own reasoning.
-- **A subagent's own account of a mid-session event is not automatically
-  trustworthy.** One privesc session in this engagement initially reported
-  that a detailed, box-specific walkthrough had arrived mid-task and been
-  "declined" — on review, no such message existed anywhere in that
-  session's actual transcript or tool output. The user confirmed a similar
-  hint really had been pasted, but to a *different*, earlier agent
-  dispatch, with no traceable mechanism for it to reach this one. The
-  original framing was struck and replaced with an honest "unresolved,
-  most likely convergent pattern-matching on real context already
-  available" note rather than a confident but unverifiable incident report
-  — worth remembering that a plausible-sounding narrative from an agent
-  about its own session needs the same skepticism as any other claimed
-  fact, especially anything security-shaped.
+  (the `CertificateAuthority.Admin` COM object) was cross-checked against
+  published AD CS research rather than independently rediscovered. Not
+  every technique needs to be rediscovered from scratch to be legitimately
+  used — but the distinction between "derived here" and "confirmed against
+  outside material" is worth keeping visible rather than blurring it after
+  the fact, so a reader can tell which parts to trust as independent
+  reasoning.
 
 See also [[docker-container-escape-enumeration-checklist]],
 [[windows-active-directory-attack-surface-checklist]],

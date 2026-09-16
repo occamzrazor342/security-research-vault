@@ -2,8 +2,6 @@
 target: cobblestone.htb
 difficulty: Insane
 os: Debian 12 (Apache 2.4.62, MariaDB 12.0.2 mariadb.org build, PHP 8.2.29, Cobbler pip-installed)
-date: 2026-07-30 to 2026-08-16 (multi-session, respawned several times)
-status: user.txt and root.txt captured, full root RCE
 ---
 
 # Cobblestone
@@ -41,30 +39,6 @@ root.
 - **Reading a CVE's actual patch diff instead of trusting the advisory
   summary** — [CVE-2024-47533 / GHSA-m26c-fcgh-cp6h — GitHub Advisory
   Database](https://github.com/advisories/GHSA-m26c-fcgh-cp6h)
-
-## Skills Learned
-
-- Second-order SQLi discovery via a "stored safely, re-used unsafely" split
-  between two endpoints
-- Turning a SQLi arbitrary-file-*read* primitive into a full source-code
-  disclosure pass across three separate PHP apps
-- Writing a PHP webshell via multi-column `UNION SELECT ... INTO DUMPFILE`,
-  including the exact column-concatenation/padding gotcha
-- Targeting a SQLi `FILE`-write primitive at a *specific* web-servable,
-  world-writable directory instead of the default OS/DB write targets
-- Extracting DB table contents through a webshell's own `mysqli` connection
-  instead of shelling out (sidesteps AppArmor exec confinement entirely)
-- Twig 3.x unsandboxed SSTI RCE gadget (`|map("system")|join`, since
-  `_self.env` no longer works post-Twig-2.x)
-- Diagnosing and working around a real `mod_apparmor` per-vhost exec-hat
-  confinement, including canonical-symlink-target exec mediation
-- CVE-2024-47533 — Cobbler XML-RPC authentication bypass via a swallowed
-  `open()` exception and an unguarded `int`/`str` sentinel comparison,
-  confirmed from the actual upstream patch diff
-- Cheetah template engine `#set` directive SSTI → root RCE
-- Credential-reuse verification: matching a live-extracted hash byte-for-byte
-  against a public writeup's already-cracked value before trusting the
-  resulting plaintext, then confirming with one real login attempt
 
 ## Recon
 
@@ -120,6 +94,20 @@ lead going into the foothold stage — custom PHP auth logic with no evidence
 of parameterized queries is the standard first thing to probe on a box like
 this.
 
+**Working theory heading into Foothold:** the attack surface sketched a
+fairly linear shape rather than a wide-open one — one obvious custom-auth
+web app (`vote.cobblestone.htb`) as the initial foothold candidate, and a
+"team page" that read less like flavor text and more like a direct list of
+this box's actual hardening controls (AppArmor, chroot jailing, firewall
+segmentation). The working plan going in: get a foothold through the vote
+app's SQL handling, then expect privesc/lateral movement to run head-on
+into AppArmor exec confinement and/or a jailed shell specifically, rather
+than a generic Linux privesc path (bad sudoers, a SUID binary, a kernel
+exploit). That lines up with the recon notes' own ranked vector list, which
+put unparameterized SQL injection on the vote app as the single
+highest-likelihood vector and flagged the deploy-page hardening hints as a
+distinct, separate post-foothold concern.
+
 ## Foothold
 
 ### Second-order SQL injection in the vote app
@@ -170,6 +158,10 @@ curl -s -D - -o /dev/null -c /tmp/c.txt -b /tmp/c.txt -X POST http://vote.cobble
 curl -s -c /tmp/c.txt -b /tmp/c.txt "http://vote.cobblestone.htb/details.php?id=<N>"
 # -> "Suggestion #11111 - 44444" / "Owner-ID: 22222 - Votes: 55555"
 ```
+
+This confirmed the working theory from Recon: the highest-priority lead —
+the vote app's own SQL handling — really was the way in, on the very first
+custom endpoint tested.
 
 The `url` column reflects into the response body, so `LOAD_FILE()` gave a
 straightforward arbitrary-file-read primitive (base64-wrapped since MariaDB's
@@ -238,16 +230,16 @@ This is a real, fully weaponizable vulnerability — but reaching it requires
 `$_SESSION['role'] === 'admin'`, and that role is only ever set server-side
 by `cobblestone.htb`'s own login flow from a DB column no self-registration
 path can set. Getting an admin session (or getting an admin's browser to
-fire the payload for us) consumed the bulk of this engagement across
-multiple sessions and is covered in **Rabbit Holes** below — it turned out
-not to be necessary at all.
+fire the payload for us) consumed the bulk of this engagement and is
+covered in **Rabbit Holes** below — it turned out not to be necessary at
+all.
 
 ### The actual breakthrough: SQLi `INTO DUMPFILE` write to `/var/www/html/skins/`
 
 Every prior attempt at using the SQLi's `FILE` privilege for a *write* (not
 just a read) had targeted `/tmp`, MariaDB's own datadir, and the `vote`
 schema's own datadir — all three genuinely fail. From three failed
-directories, prior sessions concluded the write primitive itself was
+directories, earlier testing concluded the write primitive itself was
 globally closed and pivoted entirely to waiting on the admin-gated SSTI.
 That conclusion never actually tested the one directory that mattered:
 `/var/www/html/skins/`, disclosed via source review as `drwxr-xrwx`
@@ -307,8 +299,11 @@ uid=33(www-data) gid=33(www-data) groups=33(www-data)
 (`hostname`/`uname -a` produced nothing — a separate, already-known
 AppArmor exec-confinement hat on this vhost, covered under Rabbit Holes;
 `id`/`pwd` are allow-listed and worked.) **RCE as `www-data`, via the SQLi
-alone — no admin session or bot trigger ever needed.** Reusable primitive
-saved as
+alone — no admin session or bot trigger ever needed.** This is the first
+live confirmation of the Recon-stage theory's second half — deploy
+.cobblestone.htb's "hardening clients with apparmor" line wasn't flavor
+text, it was describing a real control this exact webshell had just walked
+into. Reusable primitive saved as
 `Tooling and Scripts/exploits/cobblestone/vote_sqli_filewrite.py`
 (`write`/`webshell`/`exec` subcommands).
 
@@ -362,9 +357,11 @@ a930cefe762e7f3dcd1baad207624f65
 Lands in an `rbash`-restricted, chroot-jailed shell (`sshd_config`'s
 `Match User cobble` block: `ChrootDirectory /home/chroot_jail`) — `pwd` (an
 `rbash` builtin) and `cat` work, `id` doesn't (blocked by the restricted
-`PATH`). This restriction never had to be fought or escaped, since the
-actual root chain went through the `www-data` webshell independently, not
-through this shell.
+`PATH`). This closes out the theory's third piece too — Katrina Robinson's
+"restricting users with chroot jails" line on the same team page mapped
+directly onto this account's own SSH configuration. This restriction never
+had to be fought or escaped, since the actual root chain went through the
+`www-data` webshell independently, not through this shell.
 
 **`user.txt`: `a930cefe762e7f3dcd1baad207624f65`**
 
@@ -372,10 +369,10 @@ through this shell.
 
 ### CVE-2024-47533 — Cobbler XML-RPC authentication bypass
 
-Source disclosure and process enumeration from earlier sessions had already
-established `cobblerd` (Cobbler's provisioning daemon) running as **root**,
-bound to loopback `127.0.0.1:25151`, on a version predating the fix for
-CVE-2024-47533 (fixed upstream in 3.2.3/3.3.7). Rather than take the
+Source disclosure and process enumeration earlier in the engagement had
+already established `cobblerd` (Cobbler's provisioning daemon) running as
+**root**, bound to loopback `127.0.0.1:25151`, on a version predating the
+fix for CVE-2024-47533 (fixed upstream in 3.2.3/3.3.7). Rather than take the
 advisory's summary at face value, pulled the real fix commit
 (`e19717623c10b29e7466ed4ab23515a94beb2dda`, "XML-RPC: Prevent privilege
 escalation from none to admin", GHSA-m26c-fcgh-cp6h) to understand the
@@ -498,9 +495,9 @@ CMDOUT_END
 
 ## Root
 
-Full root confirmed and re-verified twice independently in a later session:
-once through the webshell → Cobbler-RCE chain above (`uid=0(root)`), and
-once from an entirely separate vantage point — the SSH-as-`cobble` session,
+Full root confirmed and re-verified independently two separate ways: once
+through the webshell → Cobbler-RCE chain above (`uid=0(root)`), and once
+from an entirely separate vantage point — the SSH-as-`cobble` session,
 which has no dependency on the webshell or the SQLi at all:
 
 ```bash
@@ -535,7 +532,8 @@ vulnerability, and it consumed the majority of a multi-day engagement:
   unvalidated field to a concrete admin workflow action — clicking "Preview"
   in User Management.
 - Neither vector ever fired within a cumulative 80+ minutes of monitored
-  waiting windows across three separate sessions (2026-07-30, 08-05, 08-13).
+  waiting, spread across three separate attempts over multiple days
+  (2026-07-30, 08-05, 08-13).
 
 This is the box's genuine near-miss lesson, not a clean dead end: both
 vectors were real, correctly staged, and — per two independently-consulted
@@ -561,16 +559,16 @@ datadir, and the `vote` schema's own datadir. All three genuinely do fail —
 but "write fails against these three OS/DB-owned paths" and "the `FILE`
 privilege's write capability no longer exists at all" are different claims,
 and only the second one was ever stated going forward. `/var/www/html/skins/`
-(world-writable, disclosed via source review during the very same session
-that ruled the primitive "closed") was never itself tested as a write
-*target* — only ever discussed as a hoped-for destination for a Twig-SSTI-
-driven write. The actual constraint (never fully diagnosed, and not needed
-to be) is far more mundane than a capability-stripping patch: a narrower
+(world-writable, disclosed via source review around the same time the
+primitive was ruled "closed") was never itself tested as a write *target* —
+only ever discussed as a hoped-for destination for a Twig-SSTI-driven write.
+The actual constraint (never fully diagnosed, and not needed to be) is far
+more mundane than a capability-stripping patch: a narrower
 filesystem-permission or AppArmor boundary scoped to specific directories,
 since a world-writable, web-servable one works fine while root/mysql-owned
 ones don't. Closing a technique from a small, convenient sample of targets
 without testing the one target that actually mattered cost this engagement
-its most productive session's worth of time.
+days of otherwise-avoidable delay.
 
 ### AppArmor exec-confinement hat — real, correctly diagnosed, and directly reusable
 
@@ -624,8 +622,8 @@ database process at all.
 
 ### The mysqld AppArmor profile hunt — a genuine structural dead end, not a guessing-depth gap
 
-Before the real Apache-vhost hat above was found, an earlier pass spent
-significant effort trying to locate a dedicated AppArmor profile for
+Before the real Apache-vhost hat above was found, earlier effort spent
+significant time trying to locate a dedicated AppArmor profile for
 `mysqld`/`mariadbd`, reasoning that would explain why `/var/log/**`,
 `/root/**`, `/home/*/**`, and `/var/lib/mysql/**` were all unreadable via
 `LOAD_FILE()` while `/etc/**` and `/var/www/**` weren't. Checked ~15
@@ -651,7 +649,7 @@ patterns, not box trivia.
 
 ### `general_log` file-write bypass — cleanly closed via a timing side channel
 
-A coordinator-suggested technique (if the injected account has `SUPER` and
+A known alternate write technique (if the injected account has `SUPER` and
 the injection point supports stacked queries, `SET GLOBAL general_log_file`
 + `SET GLOBAL general_log='ON'` writes a webshell via the query log, which
 isn't gated by `secure_file_priv`) was checked and closed on two independent
@@ -675,6 +673,30 @@ the disclosed source exactly. A useful general pattern: prefer a timing
 oracle over a content-based one whenever testing for stacked-query support,
 since it isn't affected by error-page masking or WAF response rewriting.
 
+## Skills Learned
+
+- Second-order SQLi discovery via a "stored safely, re-used unsafely" split
+  between two endpoints
+- Turning a SQLi arbitrary-file-*read* primitive into a full source-code
+  disclosure pass across three separate PHP apps
+- Writing a PHP webshell via multi-column `UNION SELECT ... INTO DUMPFILE`,
+  including the exact column-concatenation/padding gotcha
+- Targeting a SQLi `FILE`-write primitive at a *specific* web-servable,
+  world-writable directory instead of the default OS/DB write targets
+- Extracting DB table contents through a webshell's own `mysqli` connection
+  instead of shelling out (sidesteps AppArmor exec confinement entirely)
+- Twig 3.x unsandboxed SSTI RCE gadget (`|map("system")|join`, since
+  `_self.env` no longer works post-Twig-2.x)
+- Diagnosing and working around a real `mod_apparmor` per-vhost exec-hat
+  confinement, including canonical-symlink-target exec mediation
+- CVE-2024-47533 — Cobbler XML-RPC authentication bypass via a swallowed
+  `open()` exception and an unguarded `int`/`str` sentinel comparison,
+  confirmed from the actual upstream patch diff
+- Cheetah template engine `#set` directive SSTI → root RCE
+- Credential-reuse verification: matching a live-extracted hash byte-for-byte
+  against a public writeup's already-cracked value before trusting the
+  resulting plaintext, then confirming with one real login attempt
+
 ## Lessons Learned
 
 - **A SQLi `FILE`-write primitive that fails against the default/obvious
@@ -682,8 +704,8 @@ since it isn't affected by error-page masking or WAF response rewriting.
   itself is gone.** Test specific web-servable, world-writable application
   directories directly before concluding a write vector is dead — this
   single overgeneralization (three failed directories → "closed, full stop")
-  turned a same-session win into a multi-day admin-bot wait that was never
-  actually necessary.
+  turned an immediately-available win into a multi-day admin-bot wait that
+  was never actually necessary.
 - **`INTO DUMPFILE` against a multi-column `UNION SELECT` concatenates every
   column's value with no separator.** Padding unused columns with digit
   literals rather than empty strings can silently corrupt a webshell
