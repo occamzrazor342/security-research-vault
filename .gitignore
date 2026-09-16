@@ -9,6 +9,14 @@ secrets.env
 *.pem
 *.key
 
+# CLAUDE.md is this vault's internal operating manual for the agent
+# pipeline -- written for Claude Code to follow, not for a human visitor,
+# and full of vault-specific process/incident detail. The genericized,
+# public-facing version of the pattern it encodes lives in
+# github.com/occamzrazor342/pwnbox-harness's HARNESS.md instead. Private
+# by default like everything else here; kept locally, never pushed.
+CLAUDE.md
+
 # Recon output / lab-specific (private repo territory). Subfoldered by
 # content type (Machines/Sherlocks/Fortresses) purely for organization --
 # the whole tree stays private, nothing here is ever un-ignored.

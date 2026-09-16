@@ -1,51 +1,27 @@
-# Security Research Vault — Setup Guide
+# Security Research
 
-## What this is
-A starter Obsidian vault + Claude Code project for security research,
-CTF/HTB writeups, and building agent tooling around your workflow.
+Devin Root's security research practice — penetration testing writeups, published
+retired HackTheBox machines, and a couple of standalone tools built along the way.
 
-## Setup steps
+## Projects
 
-1. **Install Obsidian** (free): https://obsidian.md
-2. **Open this folder as a vault** in Obsidian: "Open folder as vault" →
-   select `security-vault/`
-3. **Install Claude Code** (desktop app or CLI):
-   https://claude.com/product/claude-code
-4. **Point Claude Code at this same folder.** Claude Code auto-reads
-   `CLAUDE.md` at the root every session — that's your agent's standing
-   instructions, already filled in below as a starting point.
+- **[pwnbox-harness](https://github.com/occamzrazor342/pwnbox-harness)** — a
+  multi-agent pipeline for Claude Code that runs a security-research engagement
+  (recon → exploit → privesc → writeup) end to end, plus the operating discipline —
+  16 numbered principles, each tied to a real dated incident — that makes it safe to
+  run autonomously against scoped infrastructure. This vault runs on it.
+- **[cloud-privesc-graph](https://github.com/occamzrazor342/cloud-privesc-graph)** — a
+  vendor-agnostic engine that reads AWS IAM permissions and finds privilege-escalation
+  chains through them, even when no single permission looks dangerous on its own.
 
-## Folder structure
+## Writeups
 
-```
-security-vault/
-├── CLAUDE.md              ← agent instructions (auto-loaded by Claude Code)
-├── HTB Writeups/          ← finished writeups
-├── Recon Output/          ← raw nmap/burp/gobuster dumps
-├── CVE Watch/             ← CVE research notes
-├── CTF Notes/             ← in-progress challenge notes
-├── Tooling and Scripts/   ← agent scripts you build
-└── Lab Environment/       ← VM inventory, scope docs, network diagrams
-```
+`HTB Writeups/Machines/` holds full writeups for retired HackTheBox machines — real
+recon-to-root walkthroughs with the reasoning behind each step, not just the commands
+that worked. Only retired boxes are published here, per HTB's own community guidelines.
 
-See `Tooling and Scripts/Agent Operating Principles.md` for the operating
-discipline behind the agent pipeline itself (verification habits, how
-safety boundaries get changed, publishing defaults) — that's the part
-worth reading if you're evaluating how the agents are actually run, not
-just what they found.
+## What isn't here
 
-## First agent to try
-
-Solve any retired HTB box, then in Claude Code (with this folder open):
-
-> "Here's my terminal output from HackTheBox [box name]: [paste].
-> Draft a writeup in HTB Writeups/ following the format in CLAUDE.md."
-
-From there, iterate:
-> "Now build me a script in Tooling and Scripts/ that takes an nmap XML
-> file and summarizes open ports + flags any versions with known CVEs."
-
-## Notes
-- Edit `CLAUDE.md` freely as your workflow evolves — it's just a text file.
-- Everything here is plain markdown; back it up with git or Obsidian Sync
-  if you want it portable across machines.
+Everything else in this vault (in-progress engagement notes, bug bounty scope/findings,
+lab environment details, active/non-retired box work) is private by default and stays
+that way — this repo publishes finished, cleared output only, never working notes.
