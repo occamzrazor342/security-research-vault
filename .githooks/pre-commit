@@ -1,24 +1,61 @@
 #!/bin/sh
 # Pre-commit hook: block commits containing secrets.
+#
 # Requires gitleaks: https://github.com/gitleaks/gitleaks
+# Rules live in .gitleaks.toml at the repo root (default rules + this vault's
+# own hash/credential-artifact rules).
 #
 # One-time setup after cloning:
 #   git config core.hooksPath .githooks
 #   chmod +x .githooks/pre-commit
+#
+# FAILS CLOSED. Before 2026-11-02 this hook exited 0 with a warning when
+# gitleaks was absent, so a machine without gitleaks installed had no secret
+# scanning at all and nothing said so at commit time. It now refuses the
+# commit instead. Deliberate, documented override for a machine where you
+# accept that risk:
+#
+#   SKIP_SECRET_SCAN=1 git commit ...
+#
+# Use that rather than --no-verify, so the choice shows up in your shell
+# history instead of silently disabling every other hook too.
 
-if ! command -v gitleaks >/dev/null 2>&1; then
-  echo "WARNING: gitleaks not installed — skipping secret scan."
-  echo "Install it (see https://github.com/gitleaks/gitleaks#installing) to enable this check."
+CONFIG="$(git rev-parse --show-toplevel)/.gitleaks.toml"
+
+if [ "$SKIP_SECRET_SCAN" = "1" ]; then
+  echo "WARNING: SKIP_SECRET_SCAN=1 -- committing WITHOUT a secret scan."
   exit 0
 fi
 
-echo "Running gitleaks secret scan..."
-gitleaks protect --staged --verbose
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "COMMIT BLOCKED: gitleaks is not installed, so staged changes cannot be"
+  echo "scanned for secrets."
+  echo ""
+  echo "  Install it : https://github.com/gitleaks/gitleaks#installing"
+  echo "  Or, if you accept the risk for this commit:"
+  echo "      SKIP_SECRET_SCAN=1 git commit ..."
+  exit 1
+fi
 
-if [ $? -ne 0 ]; then
+if [ ! -f "$CONFIG" ]; then
+  echo "COMMIT BLOCKED: .gitleaks.toml not found at the repo root."
+  echo "This vault's hash/credential rules live there; scanning with defaults"
+  echo "alone would miss NTLM/bcrypt/NTDS artifacts (measured 1-of-5 detection"
+  echo "on 2026-11-02). Restore it, or override with SKIP_SECRET_SCAN=1."
+  exit 1
+fi
+
+echo "Running gitleaks secret scan..."
+if ! gitleaks protect --staged --redact --config "$CONFIG"; then
   echo ""
   echo "COMMIT BLOCKED: gitleaks detected a potential secret in staged changes."
-  echo "Remove it, or if it's a false positive, see gitleaks docs on allowlisting."
+  echo ""
+  echo "  - Real secret?      Remove it. Per-target artifacts belong under"
+  echo "                      Tooling and Scripts/exploits/ (git-ignored), and"
+  echo "                      raw evidence under Recon Output/ (git-ignored)."
+  echo "  - False positive?   Add a narrow path or regex entry to the"
+  echo "                      [allowlist] in .gitleaks.toml, with a comment"
+  echo "                      saying why it is safe."
   exit 1
 fi
 

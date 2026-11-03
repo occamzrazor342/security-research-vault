@@ -1,0 +1,79 @@
+# gitleaks config for this vault.
+#
+# WHY THIS EXISTS: gitleaks' default rules detect credentials that carry a
+# structural marker -- a PEM header, an "AKIA" prefix, a provider token shape.
+# A pentest vault's characteristic output has none of that: an NTLM hash is
+# just hex, and a cracked password is just a word. Measured on 2026-11-02
+# against five files already committed to this repo's public remote, the
+# default ruleset caught 1 of 5 (bs_root_key, via the PEM header) and missed a
+# full DCSync NTLM dump, a bcrypt hash, an NTLMv2 hash, and a cracked
+# plaintext password. The rules below close that gap.
+#
+# Pair with .githooks/pre-commit (fails CLOSED if gitleaks is absent).
+# Setup after a fresh clone:  git config core.hooksPath .githooks
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "ntlm-hash-pair"
+description = "NTLM LM:NT hash pair (pwdump/secretsdump/DCSync output)"
+regex = '''\b[0-9a-fA-F]{32}:[0-9a-fA-F]{32}\b'''
+tags = ["hash", "ntlm", "pentest-artifact"]
+
+[[rules]]
+id = "ntds-dump-line"
+description = "NTDS/SAM dump line: user:RID:LM:NT:::"
+regex = '''[^\s:]+:[0-9]{3,}:[0-9a-fA-F]{32}:[0-9a-fA-F]{32}:::'''
+tags = ["hash", "ntds", "pentest-artifact"]
+
+[[rules]]
+id = "netntlmv2-hash"
+description = "Net-NTLMv2 hash (Responder/ntlmrelayx/bad-odf capture)"
+regex = '''[^\s:]*::[^\s:]+:[0-9a-fA-F]{16}:[0-9a-fA-F]{32}:[0-9a-fA-F]{32,}'''
+tags = ["hash", "netntlmv2", "pentest-artifact"]
+
+[[rules]]
+id = "bcrypt-hash"
+description = "bcrypt password hash"
+regex = '''\$2[aby]\$[0-9]{2}\$[./A-Za-z0-9]{53}'''
+tags = ["hash", "bcrypt", "pentest-artifact"]
+
+[[rules]]
+id = "kerberos-aes-key"
+description = "Kerberos AES key from secretsdump"
+regex = '''aes(128|256)-cts-hmac-sha1-96:[0-9a-fA-F]{32,64}'''
+tags = ["hash", "kerberos", "pentest-artifact"]
+
+[[rules]]
+id = "mscash-dcc2"
+description = "Domain cached credential (MSCACHEV2/DCC2)"
+regex = '''\$DCC2\$[0-9]+#[^#\s]+#[0-9a-fA-F]{32}'''
+tags = ["hash", "dcc2", "pentest-artifact"]
+
+[[rules]]
+id = "credential-artifact-filename"
+description = "File path that by name holds cracked creds or a hash dump"
+regex = '''(?i)[\s\S]{1,}'''
+path = '''(?i)(\.hash|\.ntds|\.secrets|\.potfile|_cracked|\.cracked|cracked\.txt|hashcat\.out|\.kirbi|\.ccache)$'''
+tags = ["pentest-artifact", "filename"]
+
+[allowlist]
+description = "Reviewed-by-construction paths, plus this config and the hook that cite the patterns."
+paths = [
+  # This file documents the very patterns it detects, and the hook quotes them.
+  '''^\.gitleaks\.toml$''',
+  '''^\.githooks/pre-commit$''',
+
+  # Retired-machine writeups. These are allowlisted deliberately, NOT because
+  # hashes there are harmless, but because .gitignore holds back all of
+  # HTB Writeups/* and a file becomes publishable only when someone adds an
+  # explicit `!HTB Writeups/Machines/<target>.md` line by hand. That opt-in IS
+  # the human review, and this vault's writeup standard positively requires
+  # verbatim command/output -- including hashes -- at pivotal moments. Without
+  # this entry the hook would block every future writeup revision, and a hook
+  # that blocks routine work gets bypassed with --no-verify, which is worse
+  # than no hook. The control for this path is the .gitignore opt-in; the
+  # control for everywhere else is the rules above.
+  '''^HTB Writeups/Machines/.*\.md$''',
+]
