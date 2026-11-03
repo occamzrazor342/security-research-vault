@@ -119,3 +119,34 @@ CTF Notes/*
 # clone of this outer repo if committed as-is (git itself warns: "adding
 # embedded git repository"). Not ours to redistribute either way.
 **/gogs-repos-clone/
+
+# Career/job-application material (resume, interview prep packs). Private
+# by default like everything else here -- this repo has a public remote and
+# none of this is portfolio material. Added 2026-10-28 when the AWS
+# interview review note landed in the vault root, where nothing was
+# holding it back.
+*.docx
+*Interview Talking Points*
+*interview-talking-points*
+
+# Per-target exploitation artifacts. Added 2026-11-02 after a content scan of
+# the publishable surface found live secrets committed to the public remote:
+# a full DCSync NTLM dump (PingPong, not retired), bcrypt hashes
+# (DarkZeroReturns, not retired), an NTLMv2 hash plus its cracked plaintext
+# (hercules), and ~31 further untracked-but-unignored files staged to follow on
+# any `git add -A` -- OSAI+ exam material (AWS keys, JWTs, lsass/secretsdump
+# output, 6 SSH private keys, a GitLab runner key), two full NTDS dumps from a
+# Fortress, and 10 more SSH private keys.
+#
+# Root cause: this was the ONLY major folder with no ignore rule, while
+# CLAUDE.md's job-cleanup rule actively directs every graduated exploit script
+# and its captured output here. The folder-level secret patterns above are
+# filename-based and never matched these (`bs_root_key`, `exam_redis_2026-09-29`
+# and friends carry no .key/.pem extension).
+#
+# Same default-private/explicit-opt-in shape as HTB Writeups (Agent Operating
+# Principles #7): nothing here is public unless un-ignored by name below, and a
+# file only earns that after its CONTENTS have been read -- the path tells you
+# nothing about whether it holds a hash, a key or a dump.
+Tooling and Scripts/exploits/*
+!Tooling and Scripts/exploits/.gitkeep
